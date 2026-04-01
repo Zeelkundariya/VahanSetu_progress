@@ -1,0 +1,10 @@
+__pycache__/
+*.db
+*.log
+.env
+.vscode/
+.DS_Store
+venv/
+env/
+node_modules/
+.ipynb_checkpoints/

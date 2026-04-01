@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Premium Plans — VahanSetu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/vs-design-system.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Hero */
+    .premium-hero {
+      text-align:center; padding:72px 80px 48px;
+      position:relative; z-index:1;
+    }
+    .premium-hero-title {
+      font-family:'Syne',sans-serif; font-size:clamp(2.2rem,4vw,4rem);
+      font-weight:800; letter-spacing:-2.5px; margin-bottom:14px; line-height:1.05;
+    }
+    .premium-hero-sub {
+      font-size:1.05rem; color:var(--text-secondary); max-width:560px;
+      margin:0 auto 48px; line-height:1.75;
+    }
+
+    /* Billing toggle */
+    .billing-toggle {
+      display:inline-flex; align-items:center; gap:10px;
+      background:rgba(8,13,28,0.7); border:1px solid var(--glass-border-2);
+      border-radius:50px; padding:5px 8px 5px 16px;
+      font-size:0.84rem; font-weight:500; margin-bottom:52px;
+    }
+    .toggle-track {
+      width:40px; height:22px; border-radius:50px;
+      background:rgba(0,240,255,0.25); position:relative; cursor:pointer;
+      border:1px solid var(--cyan-border); transition:background 0.25s;
+    }
+    .toggle-track.on { background:var(--cyan); }
+    .toggle-knob {
+      width:16px; height:16px; border-radius:50%; background:white;
+      position:absolute; top:2px; left:2px; transition:left 0.25s;
+    }
+    .toggle-track.on .toggle-knob { left:20px; }
+    .discount-pill { background:var(--green-dim); border:1px solid var(--green-border);
+      color:var(--green); padding:2px 10px; border-radius:50px; font-size:0.7rem; font-weight:700; }
+
+    /* Pricing Grid */
+    .pricing-grid {
+      display:grid; grid-template-columns:repeat(3,1fr);
+      gap:20px; max-width:1100px; margin:0 auto;
+      padding:0 80px 72px; position:relative; z-index:1;
+    }
+    .plan-card {
+      background:rgba(4,6,15,0.82); backdrop-filter:blur(40px) saturate(150%);
+      border:1px solid var(--glass-border-2); border-radius:24px;
+      padding:36px 30px; position:relative; overflow:hidden;
+      transition:all 0.4s var(--ease-spring);
+    }
+    .plan-card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
+      background:var(--plan-accent, rgba(255,255,255,0.1));
+    }
+    .plan-card.featured {
+      border-color:rgba(255,214,10,0.3);
+      background:linear-gradient(160deg, rgba(15,10,0,0.9) 0%, rgba(4,6,15,0.9) 60%);
+      box-shadow:0 0 80px rgba(255,214,10,0.12), var(--shadow-xl);
+      transform:scale(1.04);
+    }
+    .plan-card:hover { transform:translateY(-6px); box-shadow:var(--shadow-xl); }
+    .plan-card.featured:hover { transform:scale(1.04) translateY(-6px); }
+
+    /* Glass Badge for Featured Plan */
+    .plan-badge {
+      position:absolute; top:18px; right:18px;
+      padding:6px 14px; border-radius:50px;
+      background:var(--gold-dim); border:1px solid var(--gold-border);
+      color:var(--gold); font-size:0.68rem; font-weight:700;
+      letter-spacing:0.05em; text-transform:uppercase;
+    }
+
+    .plan-label { font-size:0.7rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:20px; }
+    .plan-price {
+      font-family:'Syne',sans-serif; font-size:3.4rem; font-weight:800;
+      letter-spacing:-3px; line-height:1; margin-bottom:4px;
+    }
+    .plan-price sup { font-size:1.4rem; vertical-align:super; letter-spacing:0; }
+    .plan-billing { font-size:0.78rem; color:var(--text-muted); margin-bottom:28px; }
+    .plan-divider { height:1px; background:var(--glass-border-2); margin:24px 0; }
+    .plan-features { list-style:none; margin-bottom:32px; display:flex; flex-direction:column; gap:10px; }
+    .plan-feature {
+      display:flex; align-items:flex-start; gap:10px; font-size:0.86rem; color:var(--text-secondary);
+    }
+    .pf-icon { flex-shrink:0; margin-top:1px; font-size:0.9rem; }
+    .pf-text { line-height:1.4; }
+    .pf-muted { color:var(--text-muted); text-decoration:line-through; }
+    .plan-cta { width:100%; padding:15px; font-size:0.95rem; border-radius:14px; }
+
+    /* Trust badges under grid */
+    .trust-strip {
+      text-align:center; padding:24px 80px 60px;
+      position:relative; z-index:1;
+    }
+    .trust-items { display:flex; justify-content:center; gap:32px; flex-wrap:wrap; margin-bottom:16px; }
+    .trust-item { display:flex; align-items:center; gap:8px; font-size:0.82rem; color:var(--text-muted); }
+
+    /* FAQ */
+    .faq-section { max-width:800px; margin:0 auto; padding:0 80px 80px; position:relative; z-index:1; }
+    .faq-title { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; text-align:center; margin-bottom:32px; letter-spacing:-0.5px; }
+    .faq-item {
+      border:1px solid var(--glass-border-2); border-radius:14px; margin-bottom:10px;
+      background:rgba(8,13,28,0.5); backdrop-filter:blur(20px); overflow:hidden;
+    }
+    .faq-q {
+      padding:18px 20px; font-weight:600; font-size:0.92rem; cursor:pointer;
+      display:flex; justify-content:space-between; align-items:center;
+      transition:color 0.2s;
+    }
+    .faq-q:hover { color:var(--cyan); }
+    .faq-a { padding:0 20px 16px; font-size:0.85rem; color:var(--text-secondary); line-height:1.75; display:none; }
+    .faq-item.open .faq-a { display:block; }
+    .faq-item.open .faq-q { color:var(--cyan); }
+    .faq-arrow { transition:transform 0.25s; }
+    .faq-item.open .faq-arrow { transform:rotate(180deg); }
+
+    @media(max-width:900px){
+      .pricing-grid { grid-template-columns:1fr; padding:0 24px 48px; }
+      .plan-card.featured { transform:none; }
+      .premium-hero { padding:60px 24px 32px; }
+      .trust-strip, .faq-section { padding-left:24px; padding-right:24px; }
+    }
+  </style>
+</head>
+<body>
+<canvas id="vs-energy-canvas"></canvas>
+<div class="vs-bg-canvas" aria-hidden="true">
+  <div class="vs-aurora-1 vs-aurora"></div>
+  <div class="vs-aurora-2 vs-aurora"></div>
+  <div class="vs-aurora-3 vs-aurora"></div>
+  <div id="vs-orb-container"></div>
+</div>
+
+{% set active_page = 'premium' %}
+{% include '_navbar.html' %}
+
+
+<!-- Hero -->
+<div class="premium-hero">
+  <div class="vs-pill vs-pill-gold" style="margin-bottom:var(--s-5);"><i data-lucide="sparkles" style="width:14px; height:14px;"></i> Exclusive Network Access</div>
+  <div class="premium-hero-title">
+    Elevate to<br><span style="background:linear-gradient(135deg,var(--gold),#ff9f00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; padding:0 10px;">VahanSetu Vault</span>
+  </div>
+  <p class="premium-hero-sub">
+    Activate high-fidelity AI charge intelligence, zero-latency logistics, and global priority access to the VahanSetu stewardship network.
+  </p>
+
+  <!-- Billing toggle -->
+  <div class="billing-toggle">
+    <span id="toggleLabel">Monthly</span>
+    <div class="toggle-track" id="billingToggle" onclick="switchBilling()">
+      <div class="toggle-knob"></div>
+    </div>
+    <span>Annual</span>
+    <span class="discount-pill">Save 44%</span>
+  </div>
+</div>
+
+<!-- Pricing Cards -->
+<div class="pricing-grid">
+
+  <!-- FREE -->
+  <div class="plan-card" style="--plan-accent:linear-gradient(90deg,rgba(255,255,255,0.1),rgba(255,255,255,0.05));">
+    <div class="plan-label vs-icon-text" style="color:var(--text-muted);"><i data-lucide="shield"></i> Stewardship Core</div>
+    <div class="plan-price" style="color:var(--text-primary);">₹<span id="price-free">0</span></div>
+    <div class="plan-billing">unlimited lifecycle · baseline access</div>
+    <div class="plan-divider"></div>
+    <ul class="plan-features">
+      <li class="plan-feature"><i data-lucide="check" class="pf-icon" style="color:var(--green);"></i><span class="pf-text">Live network telemetry</span></li>
+      <li class="plan-feature"><i data-lucide="check" class="pf-icon" style="color:var(--green);"></i><span class="pf-text">Standardized node search</span></li>
+      <li class="plan-feature"><i data-lucide="check" class="pf-icon" style="color:var(--green);"></i><span class="pf-text">Static routing logic</span></li>
+      <li class="plan-feature"><i data-lucide="check" class="pf-icon" style="color:var(--green);"></i><span class="pf-text">Transaction logging</span></li>
+      <li class="plan-feature pf-muted"><i data-lucide="x" class="pf-icon"></i><span class="pf-text">Logistics AI engine</span></li>
+      <li class="plan-feature pf-muted"><i data-lucide="x" class="pf-icon"></i><span class="pf-text">Predictive node occupancy</span></li>
+      <li class="plan-feature pf-muted"><i data-lucide="x" class="pf-icon"></i><span class="pf-text">Priority queue bypass</span></li>
+    </ul>
+    {% if is_premium %}
+    <button class="vs-btn vs-btn-secondary plan-cta" disabled>Current Plan</button>
+    {% else %}
+    <button class="vs-btn vs-btn-secondary plan-cta">Continue Free</button>
+    {% endif %}
+  </div>
+
+  <!-- PREMIUM (featured) -->
+  <div class="plan-card featured" style="--plan-accent:linear-gradient(90deg,var(--gold),#ff9f00);">
+    <div class="plan-badge">Network Favorite</div>
+    <div class="plan-label vs-icon-text" style="color:var(--gold);"><i data-lucide="sparkles"></i> High-Fidelity Vault</div>
+    <div class="plan-price" style="background:linear-gradient(135deg,var(--gold),#ff9f00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+      ₹<span id="price-premium">299</span>
+    </div>
+    <div class="plan-billing" id="billing-premium">per cycle · fully non-binding</div>
+    <div class="plan-divider"></div>
+    <ul class="plan-features">
+      <li class="plan-feature"><i data-lucide="check" class="pf-icon" style="color:var(--gold);"></i><span class="pf-text">Baseline assets included</span></li>
+      <li class="plan-feature"><i data-lucide="activity" class="pf-icon" style="color:var(--gold);"></i><span class="pf-text">AI-node throughput forecasting</span></li>
+      <li class="plan-feature"><i data-lucide="zap" class="pf-icon" style="color:var(--gold);"></i><span class="pf-text">Priority routing intelligence</span></li>
+      <li class="plan-feature"><i data-lucide="radio" class="pf-icon" style="color:var(--gold);"></i><span class="pf-text">Live node occupancy telemetry</span></li>
+      <li class="plan-feature"><i data-lucide="target" class="pf-icon" style="color:var(--gold);"></i><span class="pf-text">Bypass queue directives</span></li>
+      <li class="plan-feature"><i data-lucide="diamond" class="pf-icon" style="color:var(--gold);"></i><span class="pf-text">Vault Identity + Stewardship Support</span></li>
+      <li class="plan-feature"><i data-lucide="bar-chart-3" class="pf-icon" style="color:var(--gold);"></i><span class="pf-text">Personal consumption analytics</span></li>
+    </ul>
+    {% if is_premium %}
+    <button class="vs-btn plan-cta vs-icon-text" style="background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-border);justify-content:center;" disabled>
+      <i data-lucide="check-circle" style="width:15px;height:15px;"></i> Active Plan
+    </button>
+    {% else %}
+    <button class="vs-btn vs-btn-gold plan-cta vs-icon-text" style="justify-content:center;" onclick="checkout('premium')" id="premiumBtn">
+      <i data-lucide="zap" style="width:15px;height:15px;"></i> Upgrade — ₹<span id="cta-price-premium">299</span>/mo
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- ANNUAL PRO -->
+  <div class="plan-card" style="--plan-accent:linear-gradient(90deg,var(--cyan),var(--purple));">
+    <div class="plan-label vs-icon-text" style="color:var(--cyan);"><i data-lucide="rocket"></i> Nexus Stewardship</div>
+    <div class="plan-price" style="color:var(--text-primary);">₹<span id="price-annual">1,999</span></div>
+    <div class="plan-billing" id="billing-annual">annual commitment · optimal yield</div>
+    <div class="plan-divider"></div>
+    <ul class="plan-features">
+      <li class="plan-feature"><i data-lucide="check" class="pf-icon" style="color:var(--cyan);"></i><span class="pf-text">Vault assets included</span></li>
+      <li class="plan-feature"><i data-lucide="truck" class="pf-icon" style="color:var(--cyan);"></i><span class="pf-text">Fleet asset console access</span></li>
+      <li class="plan-feature"><i data-lucide="pie-chart" class="pf-icon" style="color:var(--cyan);"></i><span class="pf-text">Enterprise network analytics</span></li>
+      <li class="plan-feature"><i data-lucide="settings" class="pf-icon" style="color:var(--cyan);"></i><span class="pf-text">Host infrastructure toolset</span></li>
+      <li class="plan-feature"><i data-lucide="link-2" class="pf-icon" style="color:var(--cyan);"></i><span class="pf-text">API stewardship keys</span></li>
+      <li class="plan-feature"><i data-lucide="headphones" class="pf-icon" style="color:var(--cyan);"></i><span class="pf-text">Dedicated account stewardship</span></li>
+      <li class="plan-feature"><i data-lucide="gift" class="pf-icon" style="color:var(--cyan);"></i><span class="pf-text">Nexus experimental beta access</span></li>
+    </ul>
+    <button class="vs-btn vs-btn-primary plan-cta vs-icon-text" style="justify-content:center;" onclick="checkout('annual')">
+      <i data-lucide="rocket" style="width:15px;height:15px;"></i> Go Annual — ₹1,999/yr
+    </button>
+  </div>
+</div>
+
+<!-- Trust Strip -->
+<div class="trust-strip">
+  <div class="trust-items">
+    <div class="trust-item vs-icon-text" style="gap:6px;"><i data-lucide="lock" style="width:13px;height:13px;"></i> Secure Razorpay Payment</div>
+    <div class="trust-item vs-icon-text" style="gap:6px;"><i data-lucide="check-circle" style="width:13px;height:13px;color:var(--green);"></i> 7-day refund guarantee</div>
+    <div class="trust-item vs-icon-text" style="gap:6px;"><i data-lucide="diamond" style="width:13px;height:13px;color:var(--gold);"></i> Cancel anytime</div>
+    <div class="trust-item vs-icon-text" style="gap:6px;"><i data-lucide="map-pin" style="width:13px;height:13px;color:var(--cyan);"></i> Made in India</div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="faq-section">
+  <div class="faq-title">Frequently Asked Questions</div>
+  {% set faqs = [
+    ("Can I cancel anytime?", "Yes, absolutely. You can cancel your Premium subscription at any time from your profile settings. You'll continue to have access until the end of your billing period."),
+    ("Is there a free trial?", "Our Free plan gives you full access to core features forever. Premium features can be unlocked with a monthly subscription starting at ₹299."),
+    ("How does the AI trip planner work?", "Our neural engine analyzes real-time station availability, surge pricing, and route data to calculate the most efficient charging stops for your journey."),
+    ("What payment methods are accepted?", "We accept all major UPI apps, credit/debit cards, and net banking via Razorpay — India's most secure payment gateway."),
+    ("Can I use Premium on multiple devices?", "Yes, your Premium plan is tied to your account and works across all devices — mobile, tablet, and desktop.")
+  ] %}
+  {% for q, a in faqs %}
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">{{ q }}<span class="faq-arrow">▼</span></div>
+    <div class="faq-a">{{ a }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="vs-toast-container"></div>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/static/vs-energy.js"></script>
+<script>
+  let annualBilling = false;
+
+  function switchBilling() {
+    annualBilling = !annualBilling;
+    const track = document.getElementById('billingToggle');
+    track.classList.toggle('on', annualBilling);
+    document.getElementById('toggleLabel').textContent = annualBilling ? 'Annual' : 'Monthly';
+
+    if (annualBilling) {
+      document.getElementById('price-premium').textContent = '2,988';
+      document.getElementById('billing-premium').textContent = 'billed annually (₹249/mo)';
+      document.getElementById('cta-price-premium').textContent = '249';
+    } else {
+      document.getElementById('price-premium').textContent = '299';
+      document.getElementById('billing-premium').textContent = 'per month · Cancel anytime';
+      document.getElementById('cta-price-premium').textContent = '299';
+    }
+  }
+
+  function checkout(plan) {
+    const amount = plan === 'annual' ? 199900 : 29900;
+    const planName = plan === 'annual' ? 'VahanSetu Annual Pro' : 'VahanSetu Premium';
+
+    if (typeof Razorpay === 'undefined') {
+      window.vsAnimate?.showToast('Payment gateway loading... Please try again.', 'info');
+      return;
+    }
+
+    const options = {
+      key: 'rzp_test_placeholder',
+      amount: amount,
+      currency: 'INR',
+      name: 'VahanSetu',
+      description: planName,
+      theme: { color: '#00f0ff' },
+      handler: async function(resp) {
+        try {
+          const r = await fetch('/premium/verify', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ payment_id: resp.razorpay_payment_id, plan })
+          });
+          const d = await r.json();
+          if (d.success) {
+            window.vsAnimate?.showToast('🎉 Premium unlocked! Welcome to VahanSetu Premium.', 'success');
+            setTimeout(() => location.reload(), 2000);
+          } else {
+            window.vsAnimate?.showToast('Verification failed. Please contact support.', 'error');
+          }
+        } catch {
+          window.vsAnimate?.showToast('Error verifying payment.', 'error');
+        }
+      },
+      modal: { ondismiss: () => window.vsAnimate?.showToast('Payment cancelled.', 'info') }
+    };
+    new Razorpay(options).open();
+  }
+  lucide.createIcons();
+</script>
+</body>
+</html>

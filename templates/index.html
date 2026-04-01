@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VahanSetu — India's Premier EV Charging Network</title>
+  <meta name="description" content="Discover EV charging stations in real-time, plan AI-optimized routes, and manage your fleet. India's most advanced EV charging platform.">
+  <meta name="keywords" content="EV charging, electric vehicle, charging stations, India, fleet management, AI trip planner">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,500;0,14..32,700;0,14..32,800;0,14..32,900&family=Syne:wght@700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/vs-design-system.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* ================================================================
+       LANDING PAGE — "Nexus Volt" v5.0
+       ================================================================ */
+
+    body { overflow-x: hidden; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 88px 80px 60px;
+      gap: 60px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── LEFT ── */
+    .hero-left { flex: 1; max-width: 590px; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 18px;
+      border-radius: 50px;
+      background: rgba(0,240,255,0.07);
+      border: 1px solid rgba(0,240,255,0.18);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 28px;
+      animation: slide-in 0.8s var(--ease-spring) 0.1s both;
+    }
+    .eyebrow-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan), 0 0 20px var(--cyan);
+      animation: eyedot-pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes eyedot-pulse {
+      0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 8px var(--cyan); }
+      50%      { opacity:0.3; transform:scale(0.7); box-shadow:0 0 3px var(--cyan); }
+    }
+
+    /* Giant headline with gradient animation */
+    .hero-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(3rem, 5.5vw, 5.2rem);
+      font-weight: 800;
+      line-height: 1.02;
+      letter-spacing: -3px;
+      color: var(--text-primary);
+      margin-bottom: 26px;
+      animation: slide-in 0.9s var(--ease-spring) 0.2s both;
+    }
+    .hero-title .accent {
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 60%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% 200%;
+      animation: gradient-shift 5s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 30px rgba(0,240,255,0.4));
+    }
+    @keyframes gradient-shift {
+      0%   { background-position: 0% 0%; }
+      100% { background-position: 100% 100%; }
+    }
+
+    /* Subtitle */
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      max-width: 480px;
+      line-height: 1.75;
+      margin-bottom: 42px;
+      animation: slide-in 1s var(--ease-spring) 0.3s both;
+    }
+
+    /* CTA buttons row */
+    .hero-cta {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 52px;
+      flex-wrap: wrap;
+      animation: slide-in 1s var(--ease-spring) 0.4s both;
+    }
+
+    /* Feature pills row */
+    .hero-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      animation: slide-in 1s var(--ease-spring) 0.5s both;
+    }
+    .feature-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 50px;
+      background: rgba(8,13,28,0.7);
+      border: 1px solid var(--glass-border-2);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      backdrop-filter: blur(16px);
+      transition: all 0.2s var(--ease-spring);
+      cursor: default;
+    }
+    .feature-pill:hover {
+      border-color: var(--cyan-border);
+      color: var(--text-primary);
+      transform: translateY(-2px);
+    }
+    .feature-pill .fi { font-size: 0.85rem; }
+
+    /* ── RIGHT: AUTH CARD ── */
+    .hero-right {
+      width: 440px;
+      flex-shrink: 0;
+      animation: slide-in 1s var(--ease-spring) 0.3s both;
+    }
+
+    .auth-card {
+      position: relative;
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(4,6,15,0.82);
+      backdrop-filter: blur(50px) saturate(180%);
+      -webkit-backdrop-filter: blur(50px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow:
+        0 0 0 1px rgba(0,240,255,0.06),
+        0 40px 100px rgba(0,0,0,0.8),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    /* Animated gradient border */
+    .auth-card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(0,240,255,0.4), rgba(181,109,255,0.3), rgba(0,255,163,0.2), rgba(0,240,255,0.4));
+      background-size: 300% 300%;
+      animation: border-flow 4s linear infinite;
+      z-index: -1;
+      opacity: 0.5;
+    }
+    @keyframes border-flow {
+      0%  { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100%{ background-position: 0% 50%; }
+    }
+
+    /* Inner glow */
+    .auth-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,240,255,0.5), rgba(181,109,255,0.5), transparent);
+    }
+
+    /* Tab switcher */
+    .auth-tabs {
+      display: flex;
+      padding: 20px 24px 0;
+      gap: 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background: none;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      border-radius: 8px 8px 0 0;
+    }
+    .auth-tab.active {
+      color: var(--cyan);
+      border-bottom-color: var(--cyan);
+      background: rgba(0,240,255,0.05);
+      text-shadow: 0 0 12px rgba(0,240,255,0.5);
+    }
+
+    /* Auth form panels */
+    .auth-panels { padding: 28px; position: relative; }
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+
+    /* Form title */
+    .auth-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .auth-caption {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* Alert message */
+    .auth-alert {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: var(--r-sm);
+      font-size: 0.84rem;
+      font-weight: 500;
+      margin-bottom: 18px;
+    }
+    .auth-alert.error {
+      background: var(--red-dim);
+      border: 1px solid var(--red-border);
+      color: var(--red);
+    }
+    .auth-alert.success {
+      background: var(--green-dim);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+    }
+
+    /* Submit button full width */
+    .auth-submit {
+      width: 100%;
+      padding: 15px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-top: 22px;
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(0,240,255,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      position: relative;
+      z-index: 1;
+      padding: 60px 80px;
+      border-top: 1px solid var(--glass-border-2);
+      border-bottom: 1px solid var(--glass-border-2);
+      background: linear-gradient(180deg, rgba(0,240,255,0.015), transparent);
+      display: flex;
+      gap: 0;
+    }
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: 20px;
+      position: relative;
+    }
+    .stat-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: 0; top: 20%; bottom: 20%;
+      width: 1px;
+      background: var(--glass-border-2);
+    }
+    .stat-item .num {
+      font-family: 'Syne', sans-serif;
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--text-primary), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-item .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── FEATURES GRID ── */
+    .features-section {
+      position: relative;
+      z-index: 1;
+      padding: 80px;
+    }
+    .features-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .features-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 3.5vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      margin-bottom: 14px;
+    }
+    .features-subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      max-width: 540px;
+      margin: 0 auto;
+      line-height: 1.75;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    /* Individual feature card */
+    .feat-card {
+      position: relative;
+      padding: 32px 28px;
+      border-radius: var(--r-lg);
+      background: var(--bg-glass);
+      border: 1px solid var(--glass-border-2);
+      backdrop-filter: blur(24px);
+      overflow: hidden;
+      transition: all 0.4s var(--ease-spring);
+      cursor: default;
+    }
+    .feat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--feat-accent, linear-gradient(90deg, var(--cyan), var(--purple)));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feat-card::after {
+      content: '';
+      position: absolute;
+      top: -50%; right: -30%;
+      width: 200px; height: 200px;
+      background: var(--feat-glow, rgba(0,240,255,0.05));
+      border-radius: 50%;
+      filter: blur(50px);
+      pointer-events: none;
+    }
+    .feat-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(0,240,255,0.12);
+      box-shadow: var(--shadow-xl), var(--glow-cyan);
+    }
+    .feat-card:hover::before { opacity: 1; }
+
+    .feat-icon {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+      margin-bottom: 20px;
+      background: var(--feat-icon-bg, rgba(0,240,255,0.1));
+      border: 1px solid var(--feat-icon-border, rgba(0,240,255,0.15));
+      box-shadow: 0 4px 20px var(--feat-icon-glow, rgba(0,240,255,0.15));
+    }
+    .feat-card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: -0.3px;
+    }
+    .feat-card-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* ── BOTTOM CTA ── */
+    .cta-section {
+      position: relative;
+      z-index: 1;
+      padding: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(0,240,255,0.06), transparent 70%);
+      pointer-events: none;
+    }
+    .cta-eyebrow {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cta-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 3.5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -2px;
+      margin-bottom: 18px;
+      max-width: 640px;
+    }
+    .cta-subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      max-width: 480px;
+      line-height: 1.75;
+      margin-bottom: 44px;
+    }
+
+    /* Trust badges row */
+    .trust-row {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      margin-top: 36px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      position: relative;
+      z-index: 1;
+      padding: 32px 80px;
+      border-top: 1px solid var(--glass-border-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-copy {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+    .footer-links a {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--cyan); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .hero { flex-direction: column; padding: 100px 40px 60px; text-align: center; }
+      .hero-right { width: 100%; max-width: 440px; margin: 0 auto; }
+      .hero-title { font-size: clamp(2.2rem, 6vw, 4rem); }
+      .hero-cta, .hero-features { justify-content: center; }
+      .stats-bar { flex-wrap: wrap; gap: 0; }
+      .stat-item { width: 50%; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .features-section { padding: 60px 40px; }
+      .cta-section { padding: 60px 40px; }
+      .footer { padding: 28px 40px; flex-direction: column; text-align: center; }
+    }
+    @media (max-width: 640px) {
+      .hero { padding: 88px 24px 40px; }
+      .stats-bar { flex-direction: column; padding: 40px 24px; }
+      .stat-item { width: 100%; } .stat-item::after { display: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      .features-section, .cta-section { padding: 48px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── CANVAS ENERGY NETWORK ── -->
+  <canvas id="vs-energy-canvas"></canvas>
+
+  <!-- ── BACKGROUND SYSTEM ── -->
+  <div class="vs-bg-canvas" aria-hidden="true">
+    <div class="vs-aurora-1 vs-aurora"></div>
+    <div class="vs-aurora-2 vs-aurora"></div>
+    <div class="vs-aurora-3 vs-aurora"></div>
+    <div class="vs-grid-floor"></div>
+    <div class="vs-scan"></div>
+    <div id="vs-orb-container"></div>
+    <!-- EV SCENE MOUNT: The JS engine injects the full SVG scene here -->
+    <div id="ev-scene-mount"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       LANDING NAVBAR (Nexus branding)
+  ══════════════════════════════════════ -->
+  <nav class="vs-navbar" style="position:fixed;top:0;width:100%;z-index:20;background:rgba(4,6,15,0.4);backdrop-filter:blur(30px);padding:18px 80px;">
+    <a href="/" class="vs-logo" style="text-decoration:none;">
+      {% include 'logo.html' %}
+    </a>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       HERO SECTION
+  ══════════════════════════════════════ -->
+  <section class="hero">
+
+    <!-- LEFT: Headline + CTA -->
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        Powered by AI Charge Intelligence
+      </div>
+
+      <h1 class="hero-title">
+        Bridge to the<br>
+        <span class="accent">Electric Future</span>
+      </h1>
+
+      <p class="hero-sub">
+        India's most advanced EV charging network. Discover stations in real-time,
+        plan AI-optimized routes, manage your fleet, and monitor live availability —
+        all in one cinematic platform.
+      </p>
+
+      <div class="hero-cta">
+        <a href="/map" class="vs-btn vs-btn-primary vs-icon-text" style="padding:15px 32px;font-size:1rem;border-radius:14px;">
+          <i data-lucide="map"></i> Explore Live Map
+        </a>
+        <a href="/premium" class="vs-btn vs-btn-secondary vs-icon-text" style="padding:15px 24px;font-size:1rem;border-radius:14px;">
+          <i data-lucide="diamond"></i> Premium Plans
+        </a>
+      </div>
+
+      <div class="hero-features">
+        <div class="feature-pill"><i data-lucide="map" class="fi" style="color:var(--cyan); width:13px; height:13px;"></i> Live Utility</div>
+        <div class="feature-pill"><i data-lucide="zap" class="fi" style="color:var(--purple); width:13px; height:13px;"></i> Logistics AI</div>
+        <div class="feature-pill"><i data-lucide="truck" class="fi" style="color:var(--green); width:13px; height:13px;"></i> Fleet Console</div>
+        <div class="feature-pill"><i data-lucide="shield-check" class="fi" style="color:var(--gold); width:13px; height:13px;"></i> Host Portal</div>
+        <div class="feature-pill"><i data-lucide="diamond" class="fi" style="color:var(--purple); width:13px; height:13px;"></i> Vault Access</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Auth Card -->
+    <div class="hero-right">
+      <div class="auth-card">
+        <!-- Tabs -->
+        <div class="auth-tabs">
+          <button class="auth-tab vs-icon-text active" id="tab-login" onclick="switchTab('login')">
+            <i data-lucide="key-round" style="width:14px; height:14px;"></i> Identity Access
+          </button>
+          <button class="auth-tab vs-icon-text" id="tab-signup" onclick="switchTab('signup')">
+            <i data-lucide="user-plus" style="width:14px; height:14px;"></i> Register Profile
+          </button>
+        </div>
+
+        <div class="auth-panels">
+
+          <!-- Flash messages -->
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for cat, msg in messages %}
+              <div class="auth-alert {{ cat }} vs-icon-text">
+                <i data-lucide="{{ 'check-circle' if cat == 'success' else 'alert-circle' }}" style="width:16px;height:16px;"></i>
+                <span>{{ msg }}</span>
+              </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+
+          <!-- LOGIN PANEL -->
+          <div class="auth-panel active" id="panel-login">
+            <div class="auth-title">Welcome back</div>
+            <div class="auth-caption">Sign in to your VahanSetu account</div>
+
+            <form method="POST" action="/login">
+              <div class="vs-float-group">
+                <input class="vs-float-input" type="email" name="email" id="loginEmail" placeholder=" " required autocomplete="email">
+                <label class="vs-float-label" for="loginEmail">Email Address</label>
+              </div>
+              <div class="vs-float-group">
+                <input class="vs-float-input" type="password" name="password" id="loginPw" placeholder=" " required autocomplete="current-password">
+                <label class="vs-float-label" for="loginPw">Password</label>
+              </div>
+              <button type="submit" class="vs-btn vs-btn-primary auth-submit">
+                Enter the Network →
+              </button>
+            </form>
+
+            <p style="text-align:center;margin-top:20px;font-size:0.8rem;color:var(--text-muted);">
+              Don't have an account?
+              <a href="#" onclick="switchTab('signup');return false;" style="color:var(--cyan);font-weight:600;">Create one free</a>
+            </p>
+          </div>
+
+          <!-- SIGNUP PANEL -->
+          <div class="auth-panel" id="panel-signup">
+            <div class="auth-title">Join VahanSetu</div>
+            <div class="auth-caption">Create your free account in seconds</div>
+
+            <form method="POST" action="/signup">
+              <div class="vs-float-group">
+                <input class="vs-float-input" type="text" name="name" id="regName" placeholder=" " required autocomplete="name">
+                <label class="vs-float-label" for="regName">Full Name</label>
+              </div>
+              <div class="vs-float-group">
+                <input class="vs-float-input" type="email" name="email" id="regEmail" placeholder=" " required autocomplete="email">
+                <label class="vs-float-label" for="regEmail">Email Address</label>
+              </div>
+              <div class="vs-float-group">
+                <input class="vs-float-input" type="password" name="password" id="regPw" placeholder=" " required autocomplete="new-password" minlength="6">
+                <label class="vs-float-label" for="regPw">Password (min 6 chars)</label>
+              </div>
+              <button type="submit" class="vs-btn vs-btn-primary auth-submit vs-icon-text" style="justify-content:center;">
+                Create Account — It's Free <i data-lucide="sparkles" style="width:16px;height:16px;"></i>
+              </button>
+            </form>
+
+            <p style="text-align:center;margin-top:16px;font-size:0.76rem;color:var(--text-muted);line-height:1.6;">
+              By signing up you agree to our <a href="#" style="color:var(--cyan);">Terms</a> &amp; <a href="#" style="color:var(--cyan);">Privacy Policy</a>
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       STATS BAR
+  ══════════════════════════════════════ -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="num" data-count="500" data-suffix="+">0+</div>
+      <div class="stat-label">Charging Stations</div>
+    </div>
+    <div class="stat-item">
+      <div class="num" data-count="10" data-suffix="k+" data-dur="1000">0k+</div>
+      <div class="stat-label">Active Users</div>
+    </div>
+    <div class="stat-item">
+      <div class="num" data-count="98" data-suffix="%" data-dur="1200">0%</div>
+      <div class="stat-label">Network Uptime</div>
+    </div>
+    <div class="stat-item">
+      <div class="num" data-count="2.4" data-suffix="M kWh" data-dur="1400">0 kWh</div>
+      <div class="stat-label">Energy Delivered</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       FEATURES SECTION
+  ══════════════════════════════════════ -->
+  <section class="features-section">
+    <div class="features-header">
+      <div class="vs-pill vs-pill-cyan vs-icon-text" style="margin-bottom:18px;"><i data-lucide="sparkles" style="width:14px;height:14px;"></i> Platform Capabilities</div>
+      <div class="features-title">Everything you need to<br><span class="vs-gradient-text">charge smarter</span></div>
+      <p class="features-subtitle">A unified platform for EV drivers, fleet operators, and charging station owners. Built with precision, designed for the future.</p>
+    </div>
+
+    <div class="features-grid">
+      <!-- Card 1 -->
+      <div class="feat-card vs-tilt"
+           style="--feat-accent:linear-gradient(90deg,var(--cyan),var(--purple));--feat-glow:rgba(0,240,255,0.06);--feat-icon-bg:rgba(0,240,255,0.1);--feat-icon-border:rgba(0,240,255,0.15);--feat-icon-glow:rgba(0,240,255,0.2);">
+        <div class="feat-icon"><i data-lucide="map"></i></div>
+        <div class="feat-card-title">Real-time Station Map</div>
+        <p class="feat-card-desc">Live occupancy data, queue predictions, and smart filtering across India's charging network. Never wait in an unknown queue again.</p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="feat-card vs-tilt"
+           style="--feat-accent:linear-gradient(90deg,var(--purple),var(--cyan));--feat-glow:rgba(181,109,255,0.06);--feat-icon-bg:rgba(181,109,255,0.1);--feat-icon-border:rgba(181,109,255,0.15);--feat-icon-glow:rgba(181,109,255,0.2);">
+        <div class="feat-icon"><i data-lucide="bot"></i></div>
+        <div class="feat-card-title">AI Trip Planner</div>
+        <p class="feat-card-desc">Our neural engine calculates the optimal route with strategic charging stops, battery estimations, and real-time surge pricing awareness.</p>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="feat-card vs-tilt"
+           style="--feat-accent:linear-gradient(90deg,var(--green),var(--cyan));--feat-glow:rgba(0,255,163,0.05);--feat-icon-bg:rgba(0,255,163,0.09);--feat-icon-border:rgba(0,255,163,0.15);--feat-icon-glow:rgba(0,255,163,0.2);">
+        <div class="feat-icon"><i data-lucide="truck"></i></div>
+        <div class="feat-card-title">Fleet Auto-scheduler</div>
+        <p class="feat-card-desc">AI assigns optimal chargers to every vehicle in your fleet simultaneously, minimizing downtime and maximizing throughput across your operation.</p>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="feat-card vs-tilt"
+           style="--feat-accent:linear-gradient(90deg,var(--gold),var(--cyan));--feat-glow:rgba(255,214,10,0.04);--feat-icon-bg:rgba(255,214,10,0.09);--feat-icon-border:rgba(255,214,10,0.15);--feat-icon-glow:rgba(255,214,10,0.15);">
+        <div class="feat-icon"><i data-lucide="diamond"></i></div>
+        <div class="feat-card-title">Premium Intelligence</div>
+        <p class="feat-card-desc">Predictive occupancy forecasts, zero-queue routing hints, and early access to new AI features. Unlock the VahanSetu advantage.</p>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="feat-card vs-tilt"
+           style="--feat-accent:linear-gradient(90deg,var(--cyan),var(--green));--feat-glow:rgba(0,240,255,0.06);--feat-icon-bg:rgba(0,240,255,0.1);--feat-icon-border:rgba(0,240,255,0.15);--feat-icon-glow:rgba(0,240,255,0.15);">
+        <div class="feat-icon"><i data-lucide="zap"></i></div>
+        <div class="feat-card-title">CPO Station Portal</div>
+        <p class="feat-card-desc">Register chargers, monitor live sessions, track revenue, and access detailed analytics for your charging hardware business.</p>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="feat-card vs-tilt"
+           style="--feat-accent:linear-gradient(90deg,var(--purple),var(--green));--feat-glow:rgba(181,109,255,0.05);--feat-icon-bg:rgba(181,109,255,0.1);--feat-icon-border:rgba(181,109,255,0.15);--feat-icon-glow:rgba(181,109,255,0.15);">
+        <div class="feat-icon"><i data-lucide="bar-chart-3"></i></div>
+        <div class="feat-card-title">Deep Analytics</div>
+        <p class="feat-card-desc">Hourly demand heatmaps, station performance rankings, revenue forecasting, and sustainability impact metrics at your fingertips.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       BOTTOM CTA
+  ══════════════════════════════════════ -->
+  <section class="cta-section">
+    <div class="cta-eyebrow">
+      <span class="vs-dot vs-dot-green"></span>
+      Live Network · 500+ Stations
+    </div>
+    <h2 class="cta-title">Start your electric journey today</h2>
+    <p class="cta-subtitle">Join thousands of EV owners who use VahanSetu to find, plan, and manage their charging experience smarter.</p>
+
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
+      <a href="#" onclick="switchTab('signup');document.querySelector('.auth-card').scrollIntoView({behavior:'smooth'});return false;"
+         class="vs-btn vs-btn-primary vs-icon-text" style="padding:16px 36px;font-size:1.05rem;border-radius:16px;">
+        <i data-lucide="sparkles"></i> Get Started Free
+      </a>
+      <a href="/map" class="vs-btn vs-btn-secondary vs-icon-text" style="padding:16px 28px;font-size:1.05rem;border-radius:16px;">
+        <i data-lucide="map"></i> View Live Map
+      </a>
+    </div>
+
+    <div class="trust-row">
+      <div class="trust-badge vs-icon-text"><i data-lucide="shield-check" style="width:14px;height:14px;color:var(--cyan);"></i> Bank-grade security</div>
+      <div class="trust-badge vs-icon-text"><i data-lucide="check-circle" style="width:14px;height:14px;color:var(--green);"></i> No credit card needed</div>
+      <div class="trust-badge vs-icon-text"><i data-lucide="zap" style="width:14px;height:14px;color:var(--gold);"></i> Live in 30 seconds</div>
+      <div class="trust-badge vs-icon-text"><i data-lucide="heart" style="width:14px;height:14px;color:var(--red);"></i> Built for India</div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════ -->
+  <footer class="footer">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="vs-logo vs-logo-md" style="pointer-events:none;">
+        {% include 'logo.html' %}
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span class="footer-copy vs-icon-text">© 2025 VahanSetu Technologies · Made with <i data-lucide="zap" style="width:12px;height:12px;color:var(--cyan);"></i> in India</span>
+    </div>
+    <div class="footer-links">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+      <a href="#">Contact</a>
+      <a href="/admin">Admin</a>
+    </div>
+  </footer>
+
+  <!-- Toast container -->
+  <div class="vs-toast-container"></div>
+
+  <script src="/static/vs-energy.js"></script>
+  <script>
+    /* Tab Switcher */
+    function switchTab(tab) {
+      const isLogin = tab === 'login';
+      document.getElementById('tab-login').classList.toggle('active', isLogin);
+      document.getElementById('tab-signup').classList.toggle('active', !isLogin);
+      document.getElementById('panel-login').classList.toggle('active', isLogin);
+      document.getElementById('panel-signup').classList.toggle('active', !isLogin);
+    }
+
+    /* Auto-switch to signup if URL hints at it */
+    if (location.search.includes('register') || location.hash === '#signup') {
+      switchTab('signup');
+    }
+
+    /* Flash error: auto-switch to correct tab */
+    const alerts = document.querySelectorAll('.auth-alert');
+    if (alerts.length && document.getElementById('panel-signup.active')) {
+      /* stays on login by default */
+    }
+  </script>
+</body>
+</html>

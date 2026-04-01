@@ -1,0 +1,162 @@
+/* ================================================================
+   VAHANSETU — Additional Page Styles
+   Supplements the vs-design-system.css with page-specific overrides
+   ================================================================ */
+
+/* ── Global Smooth Transitions ── */
+* { transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* ── Station Count Header (Map Sidebar) ── */
+.station-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ── Map Popup Rows ── */
+.vs-popup-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.82rem;
+}
+.vs-popup-row:last-child { border-bottom: none; }
+.vs-popup-label { color: var(--text-muted, rgba(255,255,255,0.4)); }
+.vs-popup-val { font-weight: 700; }
+.vs-popup hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin: 12px 0;
+}
+
+/* ── Map Popup Action Buttons ── */
+.vs-popup-btn {
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary, #7a9cbf);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.18s;
+  font-family: inherit;
+}
+.vs-popup-btn:hover {
+  background: rgba(0,240,255,0.08);
+  border-color: rgba(0,240,255,0.2);
+  color: var(--cyan, #00f0ff);
+}
+
+/* ── Profile Page ── */
+.profile-card {
+  background: var(--bg-glass, rgba(8,13,28,0.55));
+  backdrop-filter: blur(30px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 24px;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+.profile-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--cyan, #00f0ff), var(--purple, #b56dff));
+  border-radius: 24px 24px 0 0;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan, #00f0ff), var(--purple, #b56dff));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  color: #030712;
+  box-shadow: 0 0 30px rgba(0,240,255,0.3);
+  margin: 0 auto 20px;
+}
+
+/* ── Premium Page ── */
+.premium-hero {
+  text-align: center;
+  padding: 60px 0 40px;
+}
+.premium-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.premium-plan {
+  background: var(--bg-glass, rgba(8,13,28,0.55));
+  backdrop-filter: blur(30px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 24px;
+  padding: 36px;
+  text-align: center;
+  transition: all 0.3s;
+}
+.premium-plan:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.5);
+}
+.premium-plan.featured {
+  border-color: rgba(255,214,10,0.3);
+  background: linear-gradient(135deg, rgba(255,214,10,0.05), rgba(8,13,28,0.55));
+}
+
+/* ── Admin Page ── */
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* ── Scrollable table container ── */
+.table-scroll {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ── Responsive overrides ── */
+@media (max-width: 768px) {
+  .analytics-container,
+  .dashboard-container {
+    padding: 20px;
+  }
+  .kpi-grid,
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+  .header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid,
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
