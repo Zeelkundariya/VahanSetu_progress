@@ -374,14 +374,21 @@
     .feat-card:hover::before { opacity: 1; }
 
     .feat-icon {
-      width: 56px; height: 56px;
-      border-radius: 16px;
+      width: 62px; height: 62px;
+      border-radius: 18px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.6rem;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       background: var(--feat-icon-bg, rgba(0,240,255,0.1));
       border: 1px solid var(--feat-icon-border, rgba(0,240,255,0.15));
-      box-shadow: 0 4px 20px var(--feat-icon-glow, rgba(0,240,255,0.15));
+      box-shadow: 0 4px 20px var(--feat-icon-glow, rgba(0,240,255,0.12));
+      color: var(--feat-icon-color, var(--cyan));
+      position: relative;
+      z-index: 2;
+    }
+    .feat-icon i, .feat-icon svg {
+      width: 28px;
+      height: 28px;
+      stroke-width: 1.8px;
     }
     .feat-card-title {
       font-family: 'Syne', sans-serif;
@@ -614,13 +621,16 @@
             <div class="auth-caption">Sign in to your VahanSetu account</div>
 
             <form method="POST" action="/login">
-              <div class="vs-float-group">
-                <input class="vs-float-input" type="email" name="email" id="loginEmail" placeholder=" " required autocomplete="email">
-                <label class="vs-float-label" for="loginEmail">Email Address</label>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:0.65rem;font-weight:800;color:var(--cyan);text-transform:uppercase;letter-spacing:0.1em;background:rgba(0,240,255,0.05);padding:8px 12px;border-radius:6px;width:fit-content;">
+                <i data-lucide="shield-check" style="width:12px;height:12px;"></i> Security Protocol Active
               </div>
               <div class="vs-float-group">
-                <input class="vs-float-input" type="password" name="password" id="loginPw" placeholder=" " required autocomplete="current-password">
-                <label class="vs-float-label" for="loginPw">Password</label>
+                <input class="vs-float-input" type="email" name="email" id="loginEmail" placeholder=" " required autocomplete="email" pattern=".*@gmail\.com$">
+                <label class="vs-float-label" for="loginEmail">Gmail Identity (@gmail.com)</label>
+              </div>
+              <div class="vs-float-group">
+                <input class="vs-float-input" type="password" name="password" id="loginPw" placeholder=" " required autocomplete="current-password" minlength="6">
+                <label class="vs-float-label" for="loginPw">Access Key (min 6 chars)</label>
               </div>
               <button type="submit" class="vs-btn vs-btn-primary auth-submit">
                 Enter the Network →
@@ -639,17 +649,20 @@
             <div class="auth-caption">Create your free account in seconds</div>
 
             <form method="POST" action="/signup">
-              <div class="vs-float-group">
-                <input class="vs-float-input" type="text" name="name" id="regName" placeholder=" " required autocomplete="name">
-                <label class="vs-float-label" for="regName">Full Name</label>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:0.65rem;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:0.1em;background:rgba(0,255,135,0.05);padding:8px 12px;border-radius:6px;width:fit-content;">
+                <i data-lucide="user-plus" style="width:12px;height:12px;"></i> Identity Provisioning
               </div>
               <div class="vs-float-group">
-                <input class="vs-float-input" type="email" name="email" id="regEmail" placeholder=" " required autocomplete="email">
-                <label class="vs-float-label" for="regEmail">Email Address</label>
+                <input class="vs-float-input" type="text" name="name" id="regName" placeholder=" " required autocomplete="name">
+                <label class="vs-float-label" for="regName">Full Legal Name</label>
+              </div>
+              <div class="vs-float-group">
+                <input class="vs-float-input" type="email" name="email" id="regEmail" placeholder=" " required autocomplete="email" pattern=".*@gmail\.com$">
+                <label class="vs-float-label" for="regEmail">Gmail Address (@gmail.com)</label>
               </div>
               <div class="vs-float-group">
                 <input class="vs-float-input" type="password" name="password" id="regPw" placeholder=" " required autocomplete="new-password" minlength="6">
-                <label class="vs-float-label" for="regPw">Password (min 6 chars)</label>
+                <label class="vs-float-label" for="regPw">New Access Key (min 6 chars)</label>
               </div>
               <button type="submit" class="vs-btn vs-btn-primary auth-submit vs-icon-text" style="justify-content:center;">
                 Create Account — It's Free <i data-lucide="sparkles" style="width:16px;height:16px;"></i>
@@ -701,23 +714,23 @@
     <div class="features-grid">
       <!-- Card 1 -->
       <div class="feat-card vs-tilt"
-           style="--feat-accent:linear-gradient(90deg,var(--cyan),var(--purple));--feat-glow:rgba(0,240,255,0.06);--feat-icon-bg:rgba(0,240,255,0.1);--feat-icon-border:rgba(0,240,255,0.15);--feat-icon-glow:rgba(0,240,255,0.2);">
-        <div class="feat-icon"><i data-lucide="map"></i></div>
+           style="--feat-accent:linear-gradient(90deg,var(--cyan),var(--purple));--feat-glow:rgba(0,240,255,0.06);--feat-icon-bg:rgba(0,240,255,0.1);--feat-icon-border:rgba(0,240,255,0.15);--feat-icon-glow:rgba(0,240,255,0.2);--feat-icon-color:var(--cyan);">
+        <div class="feat-icon"><i data-lucide="map-pin"></i></div>
         <div class="feat-card-title">Real-time Station Map</div>
         <p class="feat-card-desc">Live occupancy data, queue predictions, and smart filtering across India's charging network. Never wait in an unknown queue again.</p>
       </div>
 
       <!-- Card 2 -->
       <div class="feat-card vs-tilt"
-           style="--feat-accent:linear-gradient(90deg,var(--purple),var(--cyan));--feat-glow:rgba(181,109,255,0.06);--feat-icon-bg:rgba(181,109,255,0.1);--feat-icon-border:rgba(181,109,255,0.15);--feat-icon-glow:rgba(181,109,255,0.2);">
-        <div class="feat-icon"><i data-lucide="bot"></i></div>
+           style="--feat-accent:linear-gradient(90deg,var(--purple),var(--cyan));--feat-glow:rgba(181,109,255,0.06);--feat-icon-bg:rgba(181,109,255,0.1);--feat-icon-border:rgba(181,109,255,0.15);--feat-icon-glow:rgba(181,109,255,0.2);--feat-icon-color:var(--purple);">
+        <div class="feat-icon"><i data-lucide="route"></i></div>
         <div class="feat-card-title">AI Trip Planner</div>
         <p class="feat-card-desc">Our neural engine calculates the optimal route with strategic charging stops, battery estimations, and real-time surge pricing awareness.</p>
       </div>
 
       <!-- Card 3 -->
       <div class="feat-card vs-tilt"
-           style="--feat-accent:linear-gradient(90deg,var(--green),var(--cyan));--feat-glow:rgba(0,255,163,0.05);--feat-icon-bg:rgba(0,255,163,0.09);--feat-icon-border:rgba(0,255,163,0.15);--feat-icon-glow:rgba(0,255,163,0.2);">
+           style="--feat-accent:linear-gradient(90deg,var(--green),var(--cyan));--feat-glow:rgba(0,255,163,0.05);--feat-icon-bg:rgba(0,255,163,0.09);--feat-icon-border:rgba(0,255,163,0.15);--feat-icon-glow:rgba(0,255,163,0.2);--feat-icon-color:var(--green);">
         <div class="feat-icon"><i data-lucide="truck"></i></div>
         <div class="feat-card-title">Fleet Auto-scheduler</div>
         <p class="feat-card-desc">AI assigns optimal chargers to every vehicle in your fleet simultaneously, minimizing downtime and maximizing throughput across your operation.</p>
@@ -725,23 +738,23 @@
 
       <!-- Card 4 -->
       <div class="feat-card vs-tilt"
-           style="--feat-accent:linear-gradient(90deg,var(--gold),var(--cyan));--feat-glow:rgba(255,214,10,0.04);--feat-icon-bg:rgba(255,214,10,0.09);--feat-icon-border:rgba(255,214,10,0.15);--feat-icon-glow:rgba(255,214,10,0.15);">
-        <div class="feat-icon"><i data-lucide="diamond"></i></div>
+           style="--feat-accent:linear-gradient(90deg,var(--gold),var(--cyan));--feat-glow:rgba(255,214,10,0.04);--feat-icon-bg:rgba(255,214,10,0.09);--feat-icon-border:rgba(255,214,10,0.15);--feat-icon-glow:rgba(255,214,10,0.15);--feat-icon-color:var(--gold);">
+        <div class="feat-icon"><i data-lucide="crown"></i></div>
         <div class="feat-card-title">Premium Intelligence</div>
         <p class="feat-card-desc">Predictive occupancy forecasts, zero-queue routing hints, and early access to new AI features. Unlock the VahanSetu advantage.</p>
       </div>
 
       <!-- Card 5 -->
       <div class="feat-card vs-tilt"
-           style="--feat-accent:linear-gradient(90deg,var(--cyan),var(--green));--feat-glow:rgba(0,240,255,0.06);--feat-icon-bg:rgba(0,240,255,0.1);--feat-icon-border:rgba(0,240,255,0.15);--feat-icon-glow:rgba(0,240,255,0.15);">
-        <div class="feat-icon"><i data-lucide="zap"></i></div>
+           style="--feat-accent:linear-gradient(90deg,var(--cyan),var(--green));--feat-glow:rgba(0,240,255,0.06);--feat-icon-bg:rgba(0,240,255,0.1);--feat-icon-border:rgba(0,240,255,0.15);--feat-icon-glow:rgba(0,240,255,0.15);--feat-icon-color:var(--cyan);">
+        <div class="feat-icon"><i data-lucide="layout-dashboard"></i></div>
         <div class="feat-card-title">CPO Station Portal</div>
         <p class="feat-card-desc">Register chargers, monitor live sessions, track revenue, and access detailed analytics for your charging hardware business.</p>
       </div>
 
       <!-- Card 6 -->
       <div class="feat-card vs-tilt"
-           style="--feat-accent:linear-gradient(90deg,var(--purple),var(--green));--feat-glow:rgba(181,109,255,0.05);--feat-icon-bg:rgba(181,109,255,0.1);--feat-icon-border:rgba(181,109,255,0.15);--feat-icon-glow:rgba(181,109,255,0.15);">
+           style="--feat-accent:linear-gradient(90deg,var(--purple),var(--green));--feat-glow:rgba(181,109,255,0.05);--feat-icon-bg:rgba(181,109,255,0.1);--feat-icon-border:rgba(181,109,255,0.15);--feat-icon-glow:rgba(181,109,255,0.15);--feat-icon-color:var(--purple);">
         <div class="feat-icon"><i data-lucide="bar-chart-3"></i></div>
         <div class="feat-card-title">Deep Analytics</div>
         <p class="feat-card-desc">Hourly demand heatmaps, station performance rankings, revenue forecasting, and sustainability impact metrics at your fingertips.</p>
@@ -822,6 +835,9 @@
     if (alerts.length && document.getElementById('panel-signup.active')) {
       /* stays on login by default */
     }
+
+    /* NEXUS VISUAL ENGINE - ACTIVATE */
+    lucide.createIcons();
   </script>
 </body>
 </html>

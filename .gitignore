@@ -1,10 +1,28 @@
-__pycache__/
+# 🏢 VahanSetu — Secure Environment Protocol (.gitignore)
+
+# ── Databases + Assets ──
+# (Personal identity data stays local)
 *.db
-*.log
-.env
-.vscode/
-.DS_Store
-venv/
+!vahansetu/stations.db.example  # Only keep structure samples if needed
+
+# ── Python Lifecycle ──
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
 env/
-node_modules/
-.ipynb_checkpoints/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ── Environment ──
+.env
+.flaskenv
+.idea/
+.vscode/
+*.log
+
+# ── Project Specific ──
+vahansetu/server_error.log
+.DS_Store

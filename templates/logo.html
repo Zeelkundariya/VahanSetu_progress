@@ -125,30 +125,44 @@
 .vs-logo-brand {
     font-family: 'Outfit', sans-serif;
     font-weight: 900;
-    font-size: 1.5rem;
-    letter-spacing: 0.12em;
-    color: #fff;
-    line-height: 0.95;
+    font-size: 1.55rem;
+    letter-spacing: 0.14em;
+    background: linear-gradient(
+        90deg, 
+        #fff 0%, 
+        var(--c-cyan) 33%, 
+        var(--c-green) 66%, 
+        #fff 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: vs-text-flow 4s linear infinite;
+    line-height: 1;
     text-transform: uppercase;
+    filter: drop-shadow(0 0 10px rgba(0, 242, 255, 0.2));
 }
-
-.vs-logo-brand .accent {
-    color: var(--c-cyan);
-    text-shadow: 0 0 15px rgba(0, 242, 255, 0.5);
-}
-
 .vs-logo-tag {
-    font-size: 0.55rem;
-    letter-spacing: 0.6em;
-    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.58rem;
+    letter-spacing: 0.62em;
+    color: rgba(255, 255, 255, 0.45);
     text-transform: uppercase;
-    margin-top: 5px;
+    margin-top: 6px;
     font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    text-align: left;
+}
+
+@keyframes vs-text-flow {
+    0% { background-position: 100% center; }
+    100% { background-position: -100% center; }
 }
 
 /* ── Hover Accents ── */
 .vs-logo:hover .vs-logo-brand {
-    letter-spacing: 0.16em;
+    letter-spacing: 0.18em;
+    animation-duration: 2s;
     transition: all 0.4s ease;
 }
 </style>
@@ -204,7 +218,7 @@
     </div>
     
     <div class="vs-text-block">
-        <div class="vs-logo-brand">VAHAN<span class="accent">SETU</span></div>
-        <div class="vs-logo-tag">CORE MONOGRAM</div>
+        <div class="vs-logo-brand">VAHANSETU</div>
+        <div class="vs-logo-tag">UNIFIED EV ECOSYSTEM</div>
     </div>
 </div>
