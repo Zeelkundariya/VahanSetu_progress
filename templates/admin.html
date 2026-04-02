@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -95,11 +95,11 @@
   <div class="admin-grid">
     <div class="chart-card" style="--chart-accent:linear-gradient(90deg,var(--cyan),var(--purple));">
       <div class="vs-section-title vs-icon-text"><i data-lucide="trending-up"></i> Load Trend (7d)</div>
-      <canvas id="sessionChart"></canvas>
+      <canvas id="sessionChart" data-chart='{{ stats.sessions_chart|tojson if stats.sessions_chart else [42,58,33,71,49,88,64]|tojson }}'></canvas>
     </div>
     <div class="chart-card" style="--chart-accent:linear-gradient(90deg,var(--purple),var(--green));">
       <div class="vs-section-title vs-icon-text"><i data-lucide="plug-2"></i> Connector Topology</div>
-      <canvas id="connectorChart"></canvas>
+      <canvas id="connectorChart" data-chart='{{ stats.connector_dist|tojson if stats.connector_dist else [45,25,20,10]|tojson }}'></canvas>
     </div>
 
     <!-- Quick Actions -->
@@ -146,10 +146,10 @@
         <div class="station-badge" style="background:rgba(0,240,255,0.1);border:1px solid var(--cyan-border);"><i data-lucide="zap" style="width:14px;height:14px;color:var(--cyan);"></i></div>
         <div style="flex:1;min-width:0;">
           <div style="font-weight:700;font-size:0.88rem;margin-bottom:1px;">{{ st.name }}</div>
-          <div style="font-size:0.74rem;color:var(--text-muted);">{{ st.address }} · {{ st.available_bays|default(st.available_slots)|default(2) }}/{{ st.total_bays|default(st.total_slots)|default(4) }} slots</div>
+          <div style="font-size:0.74rem;color:var(--text-muted);">{{ st.address }} · {{ st.available_bays|default(2) }}/{{ st.total_bays|default(4) }} slots</div>
         </div>
-        <span class="status-pill {% if (st.available_bays or st.available_slots or 0) > 0 %}pill-ok{% else %}pill-err{% endif %}">
-          {% if (st.available_bays or st.available_slots or 0) > 0 %}<span class="vs-pulse-dot"></span>Online{% else %}<span class="vs-dot" style="background:var(--red);margin-right:5px;width:8px;height:8px;"></span>Full{% endif %}
+        <span class="status-pill {% if (st.available_bays|default(0)) > 0 %}pill-ok{% else %}pill-err{% endif %}">
+          {% if (st.available_bays|default(0)) > 0 %}<span class="vs-pulse-dot"></span>Online{% else %}<span class="vs-dot" style="background:var(--red);margin-right:5px;width:8px;height:8px;"></span>Full{% endif %}
         </span>
       </div>
       {% else %}<p style="color:var(--text-muted);text-align:center;padding:24px;">No stations registered.</p>
@@ -161,36 +161,45 @@
 <div class="vs-toast-container"></div>
 <script src="/static/vs-energy.js"></script>
 <script>
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const labelColor = isLight ? '#475569' : '#7a9cbf';
+  const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+
   const chartDefaults = {
-    color: '#7a9cbf',
-    plugins: { legend: { labels: { color:'#7a9cbf', font:{size:12}, boxWidth:14 } } },
+    color: labelColor,
+    plugins: { legend: { labels: { color: labelColor, font:{size:12}, boxWidth:14 } } },
     scales: {
-      x: { ticks:{color:'#334566'}, grid:{color:'rgba(255,255,255,0.03)'} },
-      y: { ticks:{color:'#334566'}, grid:{color:'rgba(255,255,255,0.05)'} }
+      x: { ticks:{color: labelColor}, grid:{color: gridColor} },
+      y: { ticks:{color: labelColor}, grid:{color: gridColor} }
     }
   };
   // Session chart
-  new Chart(document.getElementById('sessionChart'), {
+  const sessionCtx = document.getElementById('sessionChart');
+  new Chart(sessionCtx, {
     type:'bar',
     data:{
       labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
       datasets:[{
         label:'Sessions',
-        data:[{{ stats.sessions_chart|join(',') if stats.sessions_chart else '42,58,33,71,49,88,64' }}],
+        data: JSON.parse(sessionCtx.getAttribute('data-chart')),
         backgroundColor:'rgba(0,240,255,0.2)', borderColor:'#00f0ff',
         borderWidth:2, borderRadius:6, borderSkipped:false
       }]
     },
     options:{ ...chartDefaults, responsive:true, plugins:{...chartDefaults.plugins, title:{display:false}} }
   });
+
   // Connector doughnut
-  new Chart(document.getElementById('connectorChart'), {
+  const connectorCtx = document.getElementById('connectorChart');
+  new Chart(connectorCtx, {
     type:'doughnut',
     data:{
       labels:['CCS2','Type 2','CHAdeMO','Other'],
-      datasets:[{ data:[{{ stats.connector_dist|join(',') if stats.connector_dist else '45,25,20,10' }}],
+      datasets:[{ 
+        data: JSON.parse(connectorCtx.getAttribute('data-chart')),
         backgroundColor:['rgba(0,240,255,0.7)','rgba(181,109,255,0.7)','rgba(0,255,163,0.7)','rgba(255,214,10,0.6)'],
-        borderWidth:1, borderColor:'rgba(255,255,255,0.05)' }]
+        borderWidth:1, borderColor:'rgba(255,255,255,0.05)' 
+      }]
     },
     options:{ responsive:true, cutout:'68%',
       plugins:{ legend:{position:'bottom', labels:{color:'#7a9cbf', padding:14}} } }

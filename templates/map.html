@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -525,23 +525,40 @@
 
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-    const layerBtns = [satLayer, midnightLayer, daylightLayer];
-    const layerIcons = ['layers', 'moon', 'sun'];
-    const layerTitles = ['Satellite View', 'Midnight Navy', 'Daylight View'];
+    window.layerBtns = [satLayer, midnightLayer, daylightLayer];
+    window.layerIcons = ['layers', 'moon', 'sun'];
+    window.layerTitles = ['Satellite View', 'Midnight Navy', 'Daylight View'];
 
     document.getElementById('setLayerBtn').onclick = function() {
         // Cycle layer
-        map.removeLayer(layerBtns[currentLayerIndex]);
-        currentLayerIndex = (currentLayerIndex + 1) % layerBtns.length;
-        layerBtns[currentLayerIndex].addTo(map);
+        map.removeLayer(window.layerBtns[currentLayerIndex]);
+        currentLayerIndex = (currentLayerIndex + 1) % window.layerBtns.length;
+        window.layerBtns[currentLayerIndex].addTo(map);
         
         // Update Icon & UI
-        this.innerHTML = `<i data-lucide="${layerIcons[currentLayerIndex]}"></i>`;
-        this.title = `Switch to ${layerTitles[(currentLayerIndex + 1) % layerBtns.length]}`;
+        this.innerHTML = `<i data-lucide="${window.layerIcons[currentLayerIndex]}"></i>`;
+        this.title = `Switch to ${window.layerTitles[(currentLayerIndex + 1) % window.layerBtns.length]}`;
         lucide.createIcons();
         
-        showToast(`Map Style: ${layerTitles[currentLayerIndex]}`, 'success');
+        showToast(`Map Style: ${window.layerTitles[currentLayerIndex]}`, 'success');
     };
+
+    // Auto-sync map with theme
+    window.addEventListener('vs-theme-change', e => {
+      if (!map || !window.layerBtns) return;
+      const theme = e.detail.theme;
+      map.removeLayer(window.layerBtns[currentLayerIndex]);
+      
+      // Map dark theme to Midnight (1), light to Daylight (2)
+      currentLayerIndex = theme === 'light' ? 2 : 1;
+      window.layerBtns[currentLayerIndex].addTo(map);
+      
+      const lb = document.getElementById('setLayerBtn');
+      if (lb) {
+        lb.innerHTML = `<i data-lucide="${window.layerIcons[currentLayerIndex]}"></i>`;
+        lucide.createIcons();
+      }
+    });
 
     // Click to set start
     map.on('click', e => {
@@ -572,7 +589,7 @@
         const chip = document.getElementById('locStatus');
         if (chip) {
           chip.className = 'loc-status-chip';
-          document.getElementById('locStatusText').textContent = 'Location: India (Default)';
+          chip.textContent = 'Location: India (Default)';
         }
         showToast('Location timeout or denied. Please search for a city (e.g. Bangalore) to find stations.', 'info');
         

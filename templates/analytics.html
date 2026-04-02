@@ -2,7 +2,7 @@
    VAHANSETU — ANALYTICS INTELLIGENCE HUB (v5.0 Production)
    ══════════════════════════════════════════════════════════════════════ #}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,27 +10,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/vs-design-system.css">
+    <script src="/static/vs-theme.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        /* ── THEME ADAPTATION ── */
         :root {
-            --bg-deep: #02050b;
-            --surface: rgba(8,13,28,0.7);
-            --border: rgba(255,255,255,0.06);
-            --cyan: #00f0ff;
-            --cyan-dim: rgba(0,240,255,0.15);
-            --green: #00ff87;
-            --green-dim: rgba(0,255,135,0.12);
-            --purple: #b56dff;
-            --purple-dim: rgba(181,109,255,0.15);
-            --gold: #ffd60a;
-            --red: #ff3d6b;
-            --muted: rgba(255,255,255,0.35);
+            --surface: var(--bg-glass);
+            --border: var(--glass-border-2);
+            --muted: var(--text-muted);
             --font-syne: 'Syne', sans-serif;
             --font-mono: 'Roboto Mono', monospace;
         }
-        body { background: var(--bg-deep); color: #fff; font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; overflow-x: hidden; }
 
+        body { 
+            background: var(--bg-deep); 
+            color: var(--text-primary); 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            min-height: 100vh; 
+            overflow-x: hidden; 
+        }
         .page-wrap { padding: 32px 48px 60px; max-width: 1680px; margin: 0 auto; position: relative; z-index: 10; }
 
         /* ── Header ── */
@@ -49,10 +49,10 @@
         .filter-group { display: flex; align-items: center; gap: 10px; }
         .filter-label { font-size: 0.6rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
         .filter-select {
-            background: none; border: none; color: #fff; font-size: 0.82rem; font-weight: 700;
+            background: none; border: none; color: var(--text-primary); font-size: 0.82rem; font-weight: 700;
             outline: none; cursor: pointer; padding: 4px 8px; border-radius: 6px;
         }
-        .filter-select option { background: var(--bg-deep); }
+        .filter-select option { background: var(--bg-deep); color: var(--text-primary); }
         .filter-divider { width: 1px; height: 22px; background: var(--border); }
 
         /* ── KPI Cards ── */
@@ -100,16 +100,16 @@
             color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
         }
         .lb-table td {
-            padding: 14px 16px; background: rgba(255,255,255,0.015);
-            border-top: 1px solid rgba(255,255,255,0.025); border-bottom: 1px solid rgba(255,255,255,0.025);
+            padding: 14px 16px; background: var(--bg-glass-heavy);
+            border-top: 1px solid var(--glass-border-2); border-bottom: 1px solid var(--glass-border-2);
         }
-        .lb-table td:first-child { border-left: 1px solid rgba(255,255,255,0.025); border-radius: 10px 0 0 10px; }
-        .lb-table td:last-child { border-right: 1px solid rgba(255,255,255,0.025); border-radius: 0 10px 10px 0; }
-        .lb-table tr:hover td { background: rgba(0,240,255,0.03); }
+        .lb-table td:first-child { border-left: 1px solid var(--glass-border-2); border-radius: 10px 0 0 10px; }
+        .lb-table td:last-child { border-right: 1px solid var(--glass-border-2); border-radius: 0 10px 10px 0; }
+        .lb-table tr:hover td { background: var(--cyan-dim); }
 
-        .lb-name { font-weight: 700; font-size: 0.9rem; }
+        .lb-name { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
         .lb-id { font-size: 0.65rem; color: var(--muted); font-family: var(--font-mono); margin-top: 2px; }
-        .lb-bar { height: 6px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; flex: 1; }
+        .lb-bar { height: 6px; background: var(--glass-border-2); border-radius: 4px; overflow: hidden; flex: 1; }
         .lb-bar-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--purple)); border-radius: 4px; }
         .lb-badge { font-size: 0.6rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; }
         .lb-badge.optimal { background: var(--green-dim); color: var(--green); }
@@ -270,7 +270,7 @@
     <div class="leaderboard-card">
         <div class="lb-header">
             <div class="lb-title"><i data-lucide="layers" style="width:20px; color:var(--cyan);"></i> Station Performance Index</div>
-            <div style="font-size:0.7rem; color:var(--muted); font-family:var(--font-mono);">Synced: <span id="sync-time" style="color:#fff;"></span></div>
+            <div style="font-size:0.7rem; color:var(--muted); font-family:var(--font-mono);">Synced: <span id="sync-time" style="color:var(--text-primary);"></span></div>
         </div>
         <table class="lb-table">
             <thead>
@@ -302,9 +302,6 @@
                     <td><span class="lb-badge {{ s.status }}">{{ s.status }}</span></td>
                 </tr>
                 {% endfor %}
-                {% if not top_stations %}
-                <tr><td colspan="6" style="text-align:center; padding:40px; color:var(--muted);">No station data available yet.</td></tr>
-                {% endif %}
             </tbody>
         </table>
     </div>
@@ -316,7 +313,8 @@
     lucide.createIcons();
     document.getElementById('sync-time').innerText = new Date().toLocaleTimeString();
 
-    Chart.defaults.color = 'rgba(255,255,255,0.35)';
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    Chart.defaults.color = isLight ? 'rgba(30,40,60,0.55)' : 'rgba(255,255,255,0.35)';
     Chart.defaults.font.family = "'Inter', sans-serif";
     Chart.defaults.font.size = 11;
 
@@ -327,36 +325,42 @@
     const ctxD = document.getElementById('chartDonut').getContext('2d');
 
     function grad(ctx, h, c1, c2) {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
         const g = ctx.createLinearGradient(0, 0, 0, h);
-        g.addColorStop(0, c1); g.addColorStop(1, c2);
+        g.addColorStop(0, c1); 
+        g.addColorStop(1, isLight ? 'rgba(255,255,255,0)' : 'transparent');
         return g;
     }
 
     function renderCharts(data) {
         if (eChart) eChart.destroy();
         if (rChart) rChart.destroy();
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.03)';
+        const borderColorE = isLight ? '#007a8a' : '#00f0ff';
+        const borderColorR = isLight ? '#6d28d9' : '#b56dff';
 
         eChart = new Chart(ctxE, {
             type: 'line',
             data: { labels: data.labels, datasets: [{
-                data: data.energy, borderColor: '#00f0ff', borderWidth: 3, tension: 0.4,
+                data: data.energy, borderColor: borderColorE, borderWidth: 3, tension: 0.4,
                 pointRadius: 0, pointHoverRadius: 5, fill: true,
-                backgroundColor: grad(ctxE, 300, 'rgba(0,240,255,0.15)', 'transparent')
+                backgroundColor: grad(ctxE, 300, isLight ? 'rgba(0,150,168,0.1)' : 'rgba(0,240,255,0.15)', 'transparent')
             }]},
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, border: { display: false } } }
+                scales: { x: { grid: { display: false } }, y: { grid: { color: gridColor }, border: { display: false } } }
             }
         });
 
         rChart = new Chart(ctxR, {
             type: 'line',
             data: { labels: data.labels, datasets: [{
-                data: data.revenue, borderColor: '#b56dff', borderWidth: 3, tension: 0.4,
+                data: data.revenue, borderColor: borderColorR, borderWidth: 3, tension: 0.4,
                 pointRadius: 0, pointHoverRadius: 5, fill: true,
-                backgroundColor: grad(ctxR, 300, 'rgba(181,109,255,0.15)', 'transparent')
+                backgroundColor: grad(ctxR, 300, isLight ? 'rgba(124, 58, 237, 0.1)' : 'rgba(181,109,255,0.15)', 'transparent')
             }]},
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, border: { display: false } } }
+                scales: { x: { grid: { display: false } }, y: { grid: { color: gridColor }, border: { display: false } } }
             }
         });
 
@@ -365,7 +369,7 @@
                 type: 'bar',
                 data: { labels: ['12am','2am','4am','6am','8am','10am','12pm','2pm','4pm','6pm','8pm','10pm'],
                     datasets: [{ data: [8, 4, 3, 15, 42, 58, 52, 48, 62, 78, 65, 32],
-                        backgroundColor: ctx => ctx.raw > 65 ? '#ff3d6b' : ctx.raw > 40 ? '#00f0ff' : 'rgba(255,255,255,0.1)',
+                        backgroundColor: ctx => ctx.raw > 65 ? '#ff3d6b' : ctx.raw > 40 ? '#00f0ff' : (isLight ? 'rgba(30,40,60,0.1)' : 'rgba(255,255,255,0.1)'),
                         borderRadius: 4, barThickness: 16
                     }]
                 },
@@ -379,7 +383,7 @@
                 type: 'doughnut',
                 data: { labels: ['South', 'West', 'North', 'Other'],
                     datasets: [{ data: [38.2, 32.5, 25.3, 4.0],
-                        backgroundColor: ['#b56dff', '#00f0ff', '#00ff87', 'rgba(255,255,255,0.05)'],
+                        backgroundColor: ['#b56dff', '#00f0ff', '#00ff87', (isLight ? 'rgba(30,40,60,0.1)' : 'rgba(255,255,255,0.05)')],
                         borderWidth: 0, cutout: '80%', borderRadius: 8, spacing: 4
                     }]
                 },

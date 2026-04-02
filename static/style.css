@@ -160,3 +160,314 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ================================================================
+   LIGHT MODE — PAGE-SPECIFIC OVERRIDES
+   These handle hardcoded rgba values inside templates
+   ================================================================ */
+
+/* ── Map Sidebar ── */
+[data-theme="light"] #sidebar {
+  background: rgba(255, 255, 255, 0.95);
+  border-left: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: -4px 0 20px rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .sb-section {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .sb-title-icon {
+  background: var(--cyan-dim);
+  border: 1px solid var(--cyan-border);
+}
+
+/* ── Station Cards (Sidebar) ── */
+[data-theme="light"] .s-card {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .s-card:hover {
+  border-color: var(--cyan-border);
+  background: rgba(0, 150, 168, 0.04);
+}
+[data-theme="light"] .s-card.highlighted {
+  background: rgba(0, 150, 168, 0.06) !important;
+  border-color: var(--cyan) !important;
+  box-shadow: 0 0 16px rgba(0, 150, 168, 0.08);
+}
+[data-theme="light"] .s-action {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .s-action:hover {
+  background: var(--cyan-dim);
+  border-color: var(--cyan-border);
+  color: var(--cyan);
+}
+[data-theme="light"] .s-chip {
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+/* ── Map Controls ── */
+[data-theme="light"] .map-ctrl-btn {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-md);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .map-ctrl-btn:hover {
+  background: var(--cyan-dim);
+  border-color: var(--cyan-border);
+  color: var(--cyan);
+}
+[data-theme="light"] .map-ctrl-btn.active {
+  background: rgba(0, 150, 168, 0.12);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+/* ── Map Search & Location Chip ── */
+[data-theme="light"] .loc-status-chip {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 150, 168, 0.18);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .map-hint {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--cyan-border);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+}
+[data-theme="light"] .map-sidebar-toggle {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Trip Planner Results ── */
+[data-theme="light"] .trip-result {
+  background: rgba(0, 150, 168, 0.04);
+  border: 1px solid var(--cyan-border);
+}
+[data-theme="light"] .trip-stat {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+/* ── Station Count ── */
+[data-theme="light"] .station-count {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* ── Map Popup Rows ── */
+[data-theme="light"] .vs-popup-row {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .vs-popup hr {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+[data-theme="light"] .vs-popup-btn {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(245, 247, 251, 0.8);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .vs-popup-btn:hover {
+  background: var(--cyan-dim);
+  border-color: var(--cyan-border);
+  color: var(--cyan);
+}
+
+/* ── Profile Page ── */
+[data-theme="light"] .profile-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .profile-avatar {
+  color: #fff;
+}
+
+/* ── Profile — Avatar Card ── */
+[data-theme="light"] .avatar-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .avatar-card::after {
+  background: linear-gradient(135deg, rgba(0, 150, 168, 0.06), rgba(5, 150, 105, 0.04));
+}
+[data-theme="light"] .avatar-ring-inner {
+  background: var(--bg-deep);
+}
+[data-theme="light"] .avatar-circle {
+  background: linear-gradient(135deg, rgba(0, 150, 168, 0.15), rgba(5, 150, 105, 0.15));
+  border: 1px solid rgba(0, 150, 168, 0.25);
+  color: var(--text-primary);
+}
+[data-theme="light"] .qstat {
+  background: rgba(245, 247, 251, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.04);
+}
+[data-theme="light"] .premium-badge.free {
+  background: rgba(245, 247, 251, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+}
+[data-theme="light"] .list-item {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .chart-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .eco-card {
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.04), rgba(0, 150, 168, 0.04));
+  border: 1px solid rgba(5, 150, 105, 0.15);
+}
+
+/* ── Premium Page ── */
+[data-theme="light"] .premium-plan {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .premium-plan:hover {
+  box-shadow: var(--shadow-lg);
+}
+[data-theme="light"] .premium-plan.featured {
+  border-color: rgba(217, 119, 6, 0.25);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.04), rgba(255, 255, 255, 0.8));
+}
+
+/* ── Fleet Page ── */
+[data-theme="light"] .v-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .v-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+[data-theme="light"] .v-stat {
+  background: rgba(245, 247, 251, 0.8);
+}
+[data-theme="light"] .v-act {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .v-act:hover {
+  border-color: var(--cyan-border);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+[data-theme="light"] .v-battery {
+  background: rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .ai-panel {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.04), rgba(0, 150, 168, 0.03));
+  border: 1px solid rgba(124, 58, 237, 0.12);
+}
+[data-theme="light"] .ai-result {
+  background: rgba(245, 247, 251, 0.8);
+  border: 1px solid rgba(0, 150, 168, 0.1);
+}
+
+/* ── Auth Card (Landing) ── */
+[data-theme="light"] .auth-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.1);
+}
+[data-theme="light"] .auth-card::before {
+  opacity: 0.2;
+}
+[data-theme="light"] .auth-tabs {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .auth-tab.active {
+  background: rgba(0, 150, 168, 0.05);
+}
+
+/* ── Feature Pills (Landing) ── */
+[data-theme="light"] .feature-pill {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+[data-theme="light"] .feature-pill:hover {
+  border-color: var(--cyan-border);
+}
+
+/* ── Stats Bar (Landing) ── */
+[data-theme="light"] .stats-bar {
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: linear-gradient(180deg, rgba(0, 150, 168, 0.015), transparent);
+}
+[data-theme="light"] .stat-item:not(:last-child)::after {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+/* ── Feature Cards (Landing) ── */
+[data-theme="light"] .feat-card {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .feat-card:hover {
+  border-color: var(--cyan-border);
+  box-shadow: var(--shadow-xl), var(--glow-cyan);
+}
+
+/* ── Footer ── */
+[data-theme="light"] .footer {
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* ── Leaflet Controls ── */
+[data-theme="light"] .leaflet-bar a {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: var(--text-primary) !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+[data-theme="light"] .leaflet-bar a:hover {
+  background: var(--cyan-dim) !important;
+}
+
+/* ── Navigation HUD ── */
+[data-theme="light"] #navHUD {
+  background: #017c5b;
+}
+[data-theme="light"] #guidancePanel {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 150, 168, 0.25);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+}
+[data-theme="light"] .guide-step {
+  background: rgba(245, 247, 251, 0.8);
+}
+[data-theme="light"] .guide-step.active {
+  background: rgba(0, 150, 168, 0.08);
+  border: 2px solid var(--cyan);
+}
+
+/* ── Admin Page ── */
+[data-theme="light"] .admin-grid > div {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Modal overlays (page-specific) ── */
+[data-theme="light"] .modal-overlay {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+/* ── Analytics / CPO Page ── */
+[data-theme="light"] .kpi-card,
+[data-theme="light"] .chart-panel {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+

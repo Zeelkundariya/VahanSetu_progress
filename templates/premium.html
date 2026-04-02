@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -210,28 +210,58 @@
     </div>
 </div>
 
-<div style="max-width: 1100px; margin: 0 auto 80px; padding: 0 80px;">
-    <div class="plan-card" style="width: 100%; border-color: rgba(0, 240, 255, 0.1);">
+<div class="pricing-grid" style="grid-template-columns: 1.2fr 1.8fr; padding-bottom: 24px; max-width:1100px; margin:0 auto;">
+    <!-- STEWARDSHIP SIGNAL -->
+    <div class="plan-card" style="background: linear-gradient(135deg, rgba(255,214,10,0.03), transparent); border-color: rgba(255,214,10,0.15);">
+        <div class="plan-label vs-icon-text" style="color:var(--gold); font-size:0.75rem;">
+            <i data-lucide="radio" style="width:14px; animation: vs-pulse 2s infinite;"></i>
+            <span>Stewardship Signal</span>
+        </div>
+        <div style="text-align:center; padding:32px 10px;">
+            <div style="font-size:2.8rem; font-family:'Syne',sans-serif; color:var(--gold); font-weight:800; line-height:1; letter-spacing:-2px;">99.9%</div>
+            <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; filter:brightness(1.5); margin-top:8px;">Network Availability</div>
+        </div>
+        <div class="list-item" style="border:none; padding:10px; background:rgba(0,0,0,0.2); border-radius:12px;">
+            <i data-lucide="check-circle" style="width:14px; color:var(--green);"></i>
+            <span style="font-size:0.75rem;">Premium Nodes Verified</span>
+        </div>
+    </div>
+
+    <!-- HEATMAP -->
+    <div class="plan-card" style="border-color: rgba(0, 240, 255, 0.1);">
         <div class="plan-label vs-icon-text" style="color:var(--cyan);"><i data-lucide="bar-chart-2"></i> Network Demand Heatmap (Exclusive)</div>
-        <div style="height: 120px; width: 100%; margin-top: 20px; display: flex; align-items: flex-end; gap: 4px;">
+        <div id="premiumHeatmap" style="height: 120px; width: 100%; margin-top: 20px; display: flex; align-items: flex-end; gap: 4px;">
             {% for i in range(24) %}
                 {% set h = [10, 25, 45, 60, 30, 20, 15, 20, 40, 70, 90, 85, 75, 65, 80, 95, 100, 85, 70, 50, 40, 30, 20, 15] %}
-                <div style="flex: 1; height: {{ h[i] }}%; background: linear-gradient(0deg, rgba(0, 240, 255, 0.1), {{ '#00f2ff' if h[i] < 80 else '#ff9f00' }}); border-radius: 4px 4px 0 0;" 
-                     class="vs-tooltip" title="Hour {{ i }}:00 - {{ h[i] }}% Load"></div>
+                <div data-val="{{ h[i] }}" 
+                     class="vs-heatmap-bar vs-tooltip" 
+                     title="Hour {{ i }}:00 - {{ h[i] }}% Load"
+                     style="flex: 1; border-radius: 4px 4px 0 0; transition: height 1s ease;"></div>
             {% endfor %}
         </div>
         <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.6rem; color: var(--text-muted);">
-            <span>00:00</span>
-            <span>12:00</span>
-            <span>23:59</span>
+            <span>00:00 (Midnight)</span>
+            <span>12:00 (Noon)</span>
+            <span>23:59 (Current)</span>
         </div>
     </div>
+</div>
+
+<div style="max-width: 1100px; margin: 0 auto 80px; padding: 0 80px;">
     <div style="text-align: center; margin-top: 32px;">
         <button class="vs-btn vs-icon-text" style="background:transparent; color:var(--text-muted); border:1px solid rgba(255,255,255,0.05); cursor:pointer; font-size:0.75rem;" onclick="cancelPlan()">
             <i data-lucide="shield-off" style="width:14px; height:14px;"></i> De-provision Identity & Return to Baseline
         </button>
     </div>
 </div>
+
+<script>
+    document.querySelectorAll('.vs-heatmap-bar').forEach(bar => {
+        const val = bar.getAttribute('data-val');
+        bar.style.height = val + '%';
+        bar.style.background = `linear-gradient(0deg, rgba(0, 240, 255, 0.1), ${val < 80 ? '#00f2ff' : '#ff9f00'})`;
+    });
+</script>
 
 {% else %}
 

@@ -9,6 +9,7 @@ from flask import Flask, jsonify, request, render_template, redirect, url_for, f
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from mailer import send_vahan_email
 import sqlite3
 import random
 import math
@@ -176,6 +177,16 @@ def signup():
         u = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
         if u:
             login_user(User(u['id'], u['name'], u['email'], u['role'], u['is_premium']))
+            # --- EMAIL NOTIFICATION PROTOCOL (WELCOME) ---
+            try:
+                send_vahan_email(
+                    to_email=email,
+                    subject="💎 Provisioning Success: Welcome to VahanSetu",
+                    title=f"Welcome, {name}!",
+                    message="Your identity has been successfully provisioned in the VahanSetu network. Start exploring India's premier EV grid today.",
+                    action_text="Access Dashboard"
+                )
+            except: pass
             return redirect(url_for('map_page'))
         return redirect(url_for('index'))
     except Exception as e:
@@ -199,6 +210,17 @@ def login():
 
     if u and check_password_hash(u['password'], password):
         login_user(User(u['id'], u['name'], u['email'], u['role'], u['is_premium']))
+        # --- EMAIL NOTIFICATION PROTOCOL (LOGIN ALERT) ---
+        try:
+            send_vahan_email(
+                to_email=email,
+                subject="🛡️ VAHANSETU: Secure Identity Access Alert",
+                title="Identity Authentication Detected",
+                message=f"System: Your VahanSetu account was just accessed from a new terminal ({request.remote_addr}). If this was you, no action is needed.",
+                action_text="View Activity Logs",
+                action_url="http://127.0.0.1:5000/profile"
+            )
+        except: pass
         return redirect(url_for('map_page'))
     
     time.sleep(1.5) # Escalated security delay on authentication failure
@@ -439,7 +461,16 @@ def cpo_dashboard():
         # Auto-seed data for any user visiting CPO for the first time
         seed_user_data(current_user.id, conn)
 
-        owned = conn.execute('SELECT * FROM stations WHERE owner_id = ?', (current_user.id,)).fetchall()
+        owned = conn.execute('''
+            SELECT s.*, 
+                   COALESCE(SUM(cs.cost), 0) as total_revenue,
+                   COALESCE(SUM(cs.energy_kwh), 0) as total_kwh,
+                   COUNT(cs.id) as sessions_count
+            FROM stations s
+            LEFT JOIN charging_sessions cs ON s.id = cs.station_id
+            WHERE s.owner_id = ?
+            GROUP BY s.id
+        ''', (current_user.id,)).fetchall()
 
         agg_row = conn.execute('''
             SELECT COALESCE(SUM(energy_kwh),0) as e, COALESCE(SUM(cost),0) as r, COUNT(*) as s 
@@ -522,7 +553,7 @@ def host_delete_station(id):
 
 # ---------- Analytics (v5.0) ----------
 
-@app.route('/analytics-hub')
+@app.route('/analytics')
 @login_required
 def analytics_hub():
     conn = get_db_connection()
@@ -749,9 +780,20 @@ def profile_edit():
     try:
         conn.execute('UPDATE users SET name = ? WHERE id = ?', (name, current_user.id))
         conn.commit()
-        flash('Profile updated successfully.', 'success')
+        # --- EMAIL NOTIFICATION PROTOCOL (PROFILE EDIT) ---
+        try:
+            send_vahan_email(
+                to_email=current_user.email,
+                subject="🛡️ VAHANSETU: Identity Credentials Modified",
+                title="Profile Identity Updated",
+                message="Your VahanSetu profile details have been successfully modified. If you did not authorize this change, please contact stewardship support.",
+                action_text="View Profile",
+                action_url="http://127.0.0.1:5000/profile"
+            )
+        except: pass
+        flash('Profile updated successfully!', 'success')
     except Exception as e:
-        flash('Failed to update profile.', 'error')
+        flash(f'Error updating profile: {e}', 'error')
     finally:
         conn.close()
     return redirect(url_for('profile'))
@@ -785,7 +827,18 @@ def change_password():
         conn.execute('UPDATE users SET password = ? WHERE id = ?',
                      (generate_password_hash(new_pw), current_user.id))
         conn.commit()
-        flash('Password changed successfully!', 'success')
+        # --- EMAIL NOTIFICATION PROTOCOL (PASSWORD CHANGE) ---
+        try:
+            send_vahan_email(
+                to_email=current_user.email,
+                subject="🛡️ VAHANSETU: Access Key Reset Success",
+                title="Security Resolution Complete",
+                message="Your VahanSetu Access Key (Password) has been successfully reset. Future logins will require these new credentials.",
+                action_text="Login Now",
+                action_url="http://127.0.0.1:5000/"
+            )
+        except: pass
+        flash('Password updated successfully!', 'success')
         return redirect(url_for('profile'))
     except Exception as e:
         flash('Failed to change password.', 'error')
@@ -816,6 +869,17 @@ def premium_verify():
         conn.execute('INSERT INTO notifications (user_id, message) VALUES (?, ?)', 
                     (current_user.id, f"🌟 System: Your {plan.title()} identity has been provisioned. Welcome to the Vault."))
         conn.commit()
+        # --- EMAIL NOTIFICATION PROTOCOL (PREMIUM ACTIVATION) ---
+        try:
+            send_vahan_email(
+                to_email=current_user.email,
+                subject="💎 VAHANSETU: Vault Identity Activated",
+                title=f"Welcome to the {plan.title()} Vault!",
+                message=f"System: Your high-fidelity {plan.title()} identity has been successfully provisioned. You now have priority access to the VahanSetu network.",
+                action_text="Access Premium Dashboard",
+                action_url="http://127.0.0.1:5000/premium"
+            )
+        except: pass
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -832,6 +896,17 @@ def premium_cancel():
         conn.execute('INSERT INTO notifications (user_id, message) VALUES (?, ?)', 
                     (current_user.id, "⚖️ System: Premium identity de-provisioned. Returning to Baseline Stewardship."))
         conn.commit()
+        # --- EMAIL NOTIFICATION PROTOCOL (PREMIUM CANCELLATION) ---
+        try:
+            send_vahan_email(
+                to_email=current_user.email,
+                subject="⚖️ VAHANSETU: Identity Resolution Complete",
+                title="Returning to Baseline Stewardship",
+                message="Your VahanSetu Vault identity has been successfully de-provisioned. You will now return to the standard baseline access tier.",
+                action_text="View Plans",
+                action_url="http://127.0.0.1:5000/premium"
+            )
+        except: pass
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500

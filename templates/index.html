@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -541,10 +541,17 @@
   <!-- ══════════════════════════════════════
        LANDING NAVBAR (Nexus branding)
   ══════════════════════════════════════ -->
-  <nav class="vs-navbar" style="position:fixed;top:0;width:100%;z-index:20;background:rgba(4,6,15,0.4);backdrop-filter:blur(30px);padding:18px 80px;">
+  <nav class="vs-navbar" style="position:fixed;top:0;width:100%;z-index:1000;padding:18px 80px;display:flex;justify-content:space-between;align-items:center;">
     <a href="/" class="vs-logo" style="text-decoration:none;">
       {% include 'logo.html' %}
     </a>
+    <div style="display:flex; align-items:center; gap:20px;">
+      {% if current_user and current_user.is_authenticated %}
+        <a href="/map" class="vs-btn vs-btn-sm vs-btn-secondary vs-icon-text">
+          <i data-lucide="layout-dashboard"></i> Dashboard
+        </a>
+      {% endif %}
+    </div>
   </nav>
 
   <!-- ══════════════════════════════════════

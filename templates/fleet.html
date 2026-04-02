@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -218,7 +218,9 @@
         {% set bat = v.battery_pct|default(75)|int %}
         {% set bat_color = 'linear-gradient(90deg,var(--green),var(--cyan))' if bat > 50 else ('linear-gradient(90deg,var(--gold),var(--orange))' if bat > 20 else 'linear-gradient(90deg,var(--red),var(--orange))') %}
         <div class="v-card vs-tilt"
-             style="--v-accent:{{ bat_color }};--v-glow:rgba(0,240,255,0.05);">
+             data-bat="{{ bat }}"
+             data-lat="{{ v.lat or 0 }}"
+             data-lng="{{ v.lng or 0 }}">
           <div class="v-header">
             <div>
               <div class="v-icon" style="color:var(--cyan); opacity:0.7;"><i data-lucide="car"></i></div>
@@ -229,7 +231,7 @@
           </div>
           <div class="v-name">{{ v.vehicle_name or 'Vehicle ' ~ loop.index }}</div>
           <div class="v-plate">{{ v.vehicle_number or 'MH-XX-0000' }}</div>
-          <div class="v-battery"><div class="v-bat-fill" style="width:{{ bat }}%;background:{{ bat_color }};"></div></div>
+          <div class="v-battery"><div class="v-bat-fill"></div></div>
           <div class="v-bat-label">
             <span style="color:var(--text-muted)">Battery Status</span>
             <span style="color:var(--text-secondary)">{{ v.battery_pct }}% · {{ v.range_km|default(0)|int }} km range</span>
@@ -256,7 +258,7 @@
           </div>
           <div class="v-actions">
             <button class="v-act vs-icon-text" onclick="openScheduleModal('{{ v.id }}','{{ v.vehicle_name }}')" title="Schedule Task" style="flex:1; justify-content:center;"><i data-lucide="calendar"></i></button>
-            <button class="v-act vs-icon-text" onclick="{% if v.lat and v.lng %}findNearest({{ v.lat }},{{ v.lng }}){% else %}showToast('GPS Signal Lost: Telemetry Missing','error'){% endif %}" title="Locate on Map" style="flex:1; justify-content:center;"><i data-lucide="map-pin"></i></button>
+            <button class="v-act vs-icon-text v-locate-btn" title="Locate on Map" style="flex:1; justify-content:center;"><i data-lucide="map-pin"></i></button>
             <button class="v-act vs-icon-text" onclick="openEditModal('{{ v.id }}','{{ v.vehicle_name }}')" title="Edit Asset" style="flex:1; justify-content:center;"><i data-lucide="edit-3"></i></button>
             <button class="v-act vs-icon-text" onclick="removeVehicle('{{ v.id }}')" title="Decommission" style="flex:1; justify-content:center; color:var(--red);"><i data-lucide="trash-2"></i></button>
           </div>
@@ -606,7 +608,7 @@
       const res = await fetch('/api/fleet/optimize', { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fleet_id: '{{ fleet.id }}' })
+          body: JSON.stringify({ fleet_id: '{{ fleet.id if fleet else 1 }}' })
       });
       const data = await res.json();
       if (data.status === 'success') {
@@ -803,7 +805,41 @@
     }, 4500);
   }
 
+  function initializeVehicleCards() {
+    document.querySelectorAll('.v-card').forEach(card => {
+      const bat = parseInt(card.getAttribute('data-bat')) || 0;
+      const lat = card.getAttribute('data-lat');
+      const lng = card.getAttribute('data-lng');
+      
+      // Dynamic Styling
+      const color = bat > 50 ? 'linear-gradient(90deg,var(--green),var(--cyan))' : 
+                   (bat > 20 ? 'linear-gradient(90deg,var(--gold),var(--orange))' : 
+                              'linear-gradient(90deg,var(--red),var(--orange))');
+      card.style.setProperty('--v-accent', color);
+      card.style.setProperty('--v-glow', 'rgba(0,240,255,0.05)');
+      
+      const fill = card.querySelector('.v-bat-fill');
+      if (fill) {
+        fill.style.width = bat + '%';
+        fill.style.background = color;
+      }
+      
+      // Map Pin Logic
+      const btn = card.querySelector('.v-locate-btn');
+      if (btn) {
+        btn.onclick = () => {
+          if (lat && lat != 0 && lng && lng != 0) {
+            findNearest(lat, lng);
+          } else {
+            showToast('GPS Signal Lost: Telemetry Missing', 'error');
+          }
+        };
+      }
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    initializeVehicleCards();
     runTacticalFilter();
     initiateHeartbeat();
     animateCounters();
@@ -830,38 +866,37 @@
     });
   }
 
-  const batData = [
-    {% if fleet_vehicles %}
-      {% for v in fleet_vehicles %}{{ v.battery_pct|default(75) }}{% if not loop.last %},{% endif %}{% endfor %}
-    {% else %}82, 65, 38, 91, 14{% endif %}
-  ];
+  // Battery Distribution Chart Logic
+  const batCtx = document.getElementById('batteryChart');
+  if (batCtx) {
+    const batValues = JSON.parse(batCtx.getAttribute('data-values') || '[]');
+    const batLabels = JSON.parse(batCtx.getAttribute('data-labels') || '[]');
 
-  const chartLabels = [
-    {% if fleet_vehicles %}
-      {% for v in fleet_vehicles %}"{{ v.vehicle_name[:8] }}"{% if not loop.last %},{% endif %}{% endfor %}
-    {% else %}"DEMO-1", "DEMO-2", "DEMO-3", "UNIT-A", "CRIT-1"{% endif %}
-  ];
-
-  new Chart(document.getElementById('batteryChart'), {
-    type: 'bar',
-    data: {
-      labels: chartLabels,
-      datasets: [{
-        label: 'Charge (%)', data: batData,
-        backgroundColor: batData.map(v => v > 50 ? 'rgba(0, 255, 163, 0.6)' : v > 20 ? 'rgba(255, 214, 10, 0.6)' : 'rgba(255, 61, 107, 0.6)'),
-        borderColor: batData.map(v => v > 50 ? 'var(--green)' : v > 20 ? 'var(--gold)' : 'var(--red)'),
-        borderWidth: 1, borderRadius: 6
-      }]
-    },
-    options: { 
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } }, 
-      scales: { 
-        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
-        x: { grid: { display: false } }
-      } 
-    }
-  });
+    new Chart(batCtx, {
+      type: 'bar',
+      data: {
+        labels: batLabels,
+        datasets: [{
+          label: 'Charge (%)', 
+          data: batValues,
+          backgroundColor: batValues.map(v => v > 50 ? 'rgba(0, 255, 163, 0.6)' : v > 20 ? 'rgba(255, 214, 10, 0.6)' : 'rgba(255, 61, 107, 0.6)'),
+          borderColor: batValues.map(v => v > 50 ? 'var(--green)' : v > 20 ? 'var(--gold)' : 'var(--red)'),
+          borderWidth: 1, borderRadius: 6
+        }]
+      },
+      options: { 
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } }, 
+        scales: { 
+          y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+          x: { grid: { display: false } }
+        } 
+      }
+    });
+  }
+</script>
+</body>
+</html>
 </script>
 </body>
 </html>
