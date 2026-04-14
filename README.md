@@ -1,8 +1,6 @@
 # 💠 VahanSetu: Unified EV Infrastructure Ecosystem 
 
-[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![Flask](https://img.shields.io/badge/Flask-2.x-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
 
 **VahanSetu** is a high-fidelity, industrial-grade EV charging and logistics ecosystem designed to bridge the gap between electric ambition and infrastructure reality. Built for the Indian EV landscape, it serves as a unified command center for drivers, fleet managers, and infrastructure hosts.
 
