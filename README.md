@@ -120,12 +120,3 @@ VahanSetu is hardened with enterprise-grade defense layers:
     ```
 
 ---
-
-### 📡 Developer Note & Roadmap
-VahanSetu is currently in **Transition to v6.0 (React Integration)**. 
-**Upcoming Features:**
-- [ ] **Predictive Queueing**: AI models to predict wait times at stations.
-- [ ] **Carbon Credit Marketplace**: Convert CO2 savings into tradable credits.
-- [ ] **V2G Integration**: Vehicle-to-Grid discharging capabilities.
-
-**VAHANSETU — Bridging the Electric Future.**
