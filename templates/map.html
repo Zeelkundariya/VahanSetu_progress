@@ -413,6 +413,9 @@
           <button class="vs-btn vs-btn-primary vs-btn" id="planTripBtn" onclick="planTrip()" style="width:100%;padding:11px;border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px;">
             <i data-lucide="zap" id="planTripIcon" style="width:16px; height:16px;"></i> <span id="planTripText">Optimize EV Route</span>
           </button>
+          <button class="vs-btn" id="clearTripBtn" onclick="clearTrip()" style="width:100%;padding:8px;border-radius:10px; display:none; align-items:center; justify-content:center; gap:8px; margin-top:5px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-muted); font-size:0.75rem;">
+            <i data-lucide="rotate-ccw" style="width:12px; height:12px;"></i> Clear Trip Plan
+          </button>
           <div id="tripOutput" class="trip-result"></div>
         </div>
       </div>
@@ -1012,6 +1015,7 @@
     map.setZoom(13);
   }
 
+  let isTripActive = false;
   /* ── AI TRIP PLANNER ── */
   async function planTrip(fromVal = null, toVal = null) {
     const from = fromVal || document.getElementById('tripStart').value.trim();
@@ -1022,6 +1026,7 @@
     const btn = document.getElementById('planTripBtn');
     const bIcon = document.getElementById('planTripIcon');
     const bTxt = document.getElementById('planTripText');
+    const out  = document.getElementById('tripOutput');
     
     btn.disabled = true;
     bIcon.setAttribute('data-lucide', 'loader');
@@ -1029,13 +1034,11 @@
     bTxt.textContent = 'Optimizing...';
     lucide.createIcons();
 
-    const out = document.getElementById('tripOutput');
     out.innerHTML = '<div style="color:var(--text-muted);font-size:0.82rem;text-align:center;padding:12px;">Analyzing Corridor Charging Availability...</div>';
     out.classList.add('show');
     
     let url = `/api/trip_plan?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
     
-    // Use Coordinates if available (My Location or Map Selection)
     if (from.toLowerCase() === 'my location' && userLatLng) {
         url += `&from_lat=${userLatLng.lat}&from_lng=${userLatLng.lng}`;
     } else if (tripStartCoords && from.includes(tripStartCoords.name || "")) {
@@ -1049,6 +1052,7 @@
     }
 
     try {
+      isTripActive = true;
       const res = await fetch(url);
       const data = await res.json();
       
@@ -1058,7 +1062,13 @@
       bTxt.textContent = 'Optimize EV Route';
       lucide.createIcons();
 
-      if (data.error) { out.innerHTML = `<div style="color:var(--red);font-size:0.82rem">${data.error}</div>`; return; }
+      if (data.error) { 
+        out.innerHTML = `<div style="color:var(--red);font-size:0.82rem">${data.error}</div>`; 
+        isTripActive = false;
+        return; 
+      }
+      
+      document.getElementById('clearTripBtn').style.display = 'flex';
       
       const stopsHtml = (data.stops||[]).map(s=>`
         <div class="s-card" style="margin-top:12px; padding:20px; border-radius:18px; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);">
@@ -1182,24 +1192,69 @@
 
           (data.stops||[]).forEach((s, idx) => {
               const icon = L.divIcon({
-                  html: `<div class="vs-stop-marker">${idx+1}</div>`,
-                  className: '', iconSize:[24,24], iconAnchor:[12,12]
+                  html: `
+                    <div style="position:relative; width:44px; height:44px;">
+                      <div class="vs-marker-pulse" style="background:var(--green); opacity:0.6; scale:1.2;"></div>
+                      <div style="width:28px; height:28px; background:var(--green); border:2.5px solid #fff; border-radius:50%; position:absolute; top:8px; left:8px; box-shadow:0 0 15px var(--green); display:flex; align-items:center; justify-content:center; color:#04060f; font-weight:900; font-size:14px; font-family:'Syne';">
+                        ${idx+1}
+                      </div>
+                    </div>
+                  `,
+                  className: '', iconSize:[44,44], iconAnchor:[22,44]
               });
-              L.marker([s.lat, s.lng], { icon }).addTo(markerLayer).bindPopup(`<b>Checkpoint ${idx+1}:</b> ${s.name}`);
+              const stopMarker = L.marker([s.lat, s.lng], { icon }).addTo(markerLayer);
+              
+              // Enhanced Popups for Stops
+              const popHtml = `
+                <div class="vs-popup">
+                   <div style="color:var(--green); font-size:0.65rem; font-weight:900; letter-spacing:1px; margin-bottom:5px;">HUB RECOMMENDATION #${idx+1}</div>
+                   <div class="vs-popup-name">${s.name}</div>
+                   <div class="vs-popup-addr">${s.address}</div>
+                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+                      <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:8px;">
+                         <div style="font-size:0.55rem; color:var(--text-muted);">CAPACITY</div>
+                         <div style="color:#fff; font-weight:800; font-size:0.8rem;">${s.power_kw}kW</div>
+                      </div>
+                      <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:8px;">
+                         <div style="font-size:0.55rem; color:var(--text-muted);">DISTANCE</div>
+                         <div style="color:#fff; font-weight:800; font-size:0.8rem;">${s.distance_km}km</div>
+                      </div>
+                   </div>
+                </div>
+              `;
+              stopMarker.bindPopup(popHtml);
           });
 
           if (markerLayer.getLayers().length > 0) {
               const group = new L.featureGroup(markerLayer.getLayers());
               map.fitBounds(group.getBounds().pad(0.3));
           }
-          showToast('Tactical route planned! Navigation instructions ready.','success');
+          showToast(`Optimal route mapped with ${data.stops?.length || 0} secure hubs identified.`,'success');
           lucide.createIcons();
       }
 
     } catch(e) { 
         console.error(e);
         out.innerHTML = `<div style="color:var(--red);font-size:0.82rem">Failed to plan route. Error: ${e.message}</div>`; 
+        isTripActive = false;
     }
+  }
+
+  function clearTrip() {
+    isTripActive = false;
+    document.getElementById('clearTripBtn').style.display = 'none';
+    document.getElementById('tripOutput').classList.remove('show');
+    document.getElementById('tripStart').value = '';
+    document.getElementById('tripEnd').value = '';
+    
+    if (map) {
+        map.eachLayer(l => { if (l instanceof L.GeoJSON) map.removeLayer(l); });
+        markerLayer.clearLayers();
+    }
+    
+    stopNavigation();
+    fetchStations();
+    showToast('Trip plan cleared. Returning to live network discovery.', 'info');
   }
 
   /* ── ACTIONS ── */
@@ -1347,7 +1402,37 @@
   } else { voiceBtn.style.display = 'none'; }
 
   initMap();
-  setInterval(fetchStations, 30000);
+  
+  // ── AUTO-LOCATION PROTOCOL ──
+  // Immediately request tactical coordinates on load for "Perfect" experience
+  window.addEventListener('load', () => {
+      if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+              p => {
+                  userLatLng = L.latLng(p.coords.latitude, p.coords.longitude);
+                  map.flyTo(userLatLng, 14);
+                  
+                  // Pulse indicator for user location
+                  L.marker(userLatLng, {
+                      icon: L.divIcon({
+                          className: '',
+                          html: '<div class="vs-marker-user"><div class="vu-pulse"></div><div class="vu-core"></div></div>',
+                          iconSize: [24,24], iconAnchor: [12,12]
+                      })
+                  }).addTo(map).bindPopup("<b>Current Position</b><br>Tactical sync active.").openPopup();
+                  
+                  fetchStations(); // Refresh with real proximity
+                  showToast('Tactical location synchronized.', 'success');
+              },
+              () => {
+                  showToast('Geospace Access Denied: Defaulting to regional baseline.', 'warning');
+                  fetchStations(); 
+              }
+          );
+      }
+  });
+
+  setInterval(() => { if (!isTripActive) fetchStations(); }, 30000);
 </script>
 </body>
 </html>
