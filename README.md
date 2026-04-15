@@ -40,11 +40,11 @@ VahanSetu solves these challenges through three specialized portals integrated i
 
 ## 🏗️ Deep Dive: Full-Stack Architecture
 
-### ⚛️ Frontend: React (The Face)
-VahanSetu is transitioning to a **Single Page Application (SPA)** architecture powered by **React.js**. This shift enables:
-*   **Real-time UI Synchronization**: Instant dashboard updates without page reloads.
-*   **Component-Driven Design**: Reusable atomic elements for gauges, maps, and fleet cards.
-*   **Optimized State Management**: Efficient handling of live telemetry streams.
+### 💠 Frontend: High-Fidelity HTML/CSS (The Face)
+VahanSetu utilizes a robust **Server-Side Rendered (SSR)** architecture powered by Flask Templates. This native approach ensures:
+*   **Zero-Latency Initialization**: Instant page rendering directly from the backend.
+*   **High-Aesthetic Glassmorphism**: Custom Vanilla CSS3 with premium blurs, gradients, and micro-animations.
+*   **Optimized Performance**: Lightweight delivery of tactical dashboards without the overhead of a virtual DOM.
 
 ### 🐍 Backend: Python / Flask (The Brain)
 The backend serves as a high-performance **RESTful API Engine**:
@@ -76,11 +76,11 @@ VahanSetu is hardened with enterprise-grade defense layers:
 
 ---
 
-## 🛠️ Industrial Tech Stack (MERN+P)
+## 🛠️ Industrial Tech Stack (Flask-H)
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Frontend UI** | **React.js, Vite, Tailwind CSS** |
+| **Frontend UI** | **HTML5, CSS3 (Glassmorphism), Vanilla JS** |
 | **Core Backend** | Python 3.x, Flask (RESTful API) |
 | **Relational DB** | SQLite (Write-Ahead Logging / WAL-Mode) |
 | **NoSQL Telemetry**| MongoDB (Atlas / Community Edition) |
@@ -101,20 +101,19 @@ VahanSetu is hardened with enterprise-grade defense layers:
 
 ---
 
-## 🚀 Getting Started
+### 🚀 Getting Started
 
 ### 🛠️ Installation
-1.  **Backend Setup**:
+1.  **Clone and Setup**:
     ```bash
-    cd server
+    git clone https://github.com/vahan-setu/core.git
+    cd vahansetu
     pip install -r requirements.txt
+    ```
+2.  **Launch Platform**:
+    ```bash
     python app.py
     ```
-2.  **Frontend Setup**:
-    ```bash
-    cd client
-    npm install
-    npm run dev
-    ```
+    *Access the tactical grid at `http://127.0.0.1:5000`*
 
 ---
