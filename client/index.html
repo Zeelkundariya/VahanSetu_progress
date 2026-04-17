@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:," />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VahanSetu — India's Premier EV Charging Network</title>
+    <meta name="description" content="Discover EV charging stations in real-time, plan AI-optimized routes, and manage your fleet. India's most advanced EV charging platform." />
+    <!-- Google Fonts — exact same as HTML version -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900&family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@900&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Original VahanSetu Design System — same file as Flask serves -->
+    <link rel="stylesheet" href="/vs-design-system.css" />
+    <!-- Lucide Icons CDN (before everything else so it's available immediately) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+  </head>
+  <body>
+    <!-- ── CANVAS ENERGY NETWORK (must exist before vs-energy.js) ── -->
+    <canvas id="vs-energy-canvas"></canvas>
+
+    <!-- ── BACKGROUND SYSTEM (must exist before vs-energy.js) ── -->
+    <div class="vs-bg-canvas" aria-hidden="true">
+      <div class="vs-aurora-1 vs-aurora"></div>
+      <div class="vs-aurora-2 vs-aurora"></div>
+      <div class="vs-aurora-3 vs-aurora"></div>
+      <div class="vs-grid-floor"></div>
+      <div class="vs-scan"></div>
+      <div id="vs-orb-container"></div>
+      <!-- EV SCENE MOUNT: The JS engine injects the full SVG scene here -->
+      <div id="ev-scene-mount"></div>
+    </div>
+
+    <!-- React app mounts here -->
+    <div id="root"></div>
+
+    <!-- React module (loads after DOM already has canvas + bg elements) -->
+    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Energy Animation — runs after DOM is ready, all elements exist -->
+    <script src="/vs-energy.js"></script>
+  </body>
+</html>
