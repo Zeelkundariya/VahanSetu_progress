@@ -16,6 +16,13 @@ export default function CpoPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDeploy, setShowDeploy] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedStation, setSelectedStation] = useState(null);
+
+  const [deployLoading, setDeployLoading] = useState(false);
+  const [deployData, setDeployData] = useState({
+    name: '', address: '', lat: '', lng: '', connector: 'CCS2 Combo (DC Fast)', power: 60, bays: 4
+  });
 
   useEffect(() => {
     fetchData();
@@ -36,6 +43,53 @@ export default function CpoPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeploy = async (e) => {
+    e.preventDefault();
+    setDeployLoading(true);
+    try {
+      const res = await api.post('/api/host/deploy', deployData);
+      if (res.data.success) {
+        showToast(res.data.message, 'success');
+        setShowDeploy(false);
+        setDeployData({ name: '', address: '', lat: '', lng: '', connector: 'CCS2 Combo (DC Fast)', power: 60, bays: 4 });
+        fetchData();
+      } else {
+        showToast(res.data.message || 'Deployment Rejected', 'error');
+      }
+    } catch (e) {
+      showToast('Quantum Provisioning Error', 'error');
+    } finally {
+      setDeployLoading(false);
+    }
+  };
+
+  const [removeLoading, setRemoveLoading] = useState(null);
+
+  const handleRemove = async (id) => {
+    if (!window.confirm("⚠️ Are you sure you want to decommission this station? This action cannot be undone.")) return;
+    setRemoveLoading(id);
+    try {
+      const res = await api.delete(`/api/host/station/${id}`);
+      if (res.data.success) {
+        showToast(res.data.message, 'success');
+        setShowDetails(false);
+        fetchData();
+      } else {
+        showToast(res.data.message || 'Decommissioning Failed', 'error');
+      }
+    } catch (e) {
+      console.error("Removal fail:", e);
+      showToast('Nexus Protocol Error during removal', 'error');
+    } finally {
+      setRemoveLoading(null);
+    }
+  };
+
+  const openDetails = (station) => {
+    setSelectedStation(station);
+    setShowDetails(true);
   };
 
   if (loading && stations.length === 0) return (
@@ -70,7 +124,7 @@ export default function CpoPage() {
             </div>
           </div>
 
-          {/* KPI Strip (Same-to-Same HTML) */}
+          {/* KPI Strip */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 40 }}>
              <div className="vs-glass" style={{ padding: 28, borderRadius: 20, borderTop: '4px solid var(--cyan)', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}><Server size={13} /> Active Stations</div>
@@ -167,11 +221,11 @@ export default function CpoPage() {
 
                         {/* Card Actions */}
                         <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-                           <button className="vs-btn vs-btn-sm vs-btn-secondary" style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.03)' }}>
+                           <button className="vs-btn vs-btn-sm vs-btn-secondary" onClick={() => openDetails(station)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.03)' }}>
                               <ExternalLink size={14} /> Details
                            </button>
-                           <button className="vs-btn vs-btn-sm vs-btn-secondary" style={{ flex: 1, padding: 10, color: 'var(--red)', background: 'rgba(255,61,107,0.05)' }}>
-                              <Trash2 size={14} /> Remove
+                           <button className="vs-btn vs-btn-sm vs-btn-secondary" onClick={() => handleRemove(station.id)} disabled={removeLoading === station.id} style={{ flex: 1, padding: 10, color: 'var(--red)', background: 'rgba(255,61,107,0.05)' }}>
+                              {removeLoading === station.id ? 'Decommissioning...' : <><Trash2 size={14} /> Remove</>}
                            </button>
                         </div>
                       </div>
@@ -254,7 +308,56 @@ export default function CpoPage() {
         </div>
       </div>
 
-      {/* Deploy Modal (Precision Port) */}
+      {/* Details Modal */}
+      {showDetails && selectedStation && (
+        <div className="vs-modal-overlay" onClick={() => setShowDetails(false)}>
+           <div className="vs-modal vs-glass" onClick={e => e.stopPropagation()} style={{ maxWidth: 800, padding: 40, borderRadius: 32 }}>
+              <div className="vs-flex-between" style={{ marginBottom: 32 }}>
+                 <div>
+                    <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>{selectedStation.name}</h2>
+                    <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={14} /> {selectedStation.address}</p>
+                 </div>
+                 <button className="vs-btn-icon" onClick={() => setShowDetails(false)} style={{ background: 'rgba(255,255,255,0.05)' }}><X /></button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 32 }}>
+                <div className="vs-glass" style={{ padding: 20, textAlign: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                   <div style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Total Revenue</div>
+                   <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--gold)' }}>₹{selectedStation.total_revenue?.toLocaleString() || 0}</div>
+                </div>
+                <div className="vs-glass" style={{ padding: 20, textAlign: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                   <div style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Total Sessions</div>
+                   <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--cyan)' }}>{selectedStation.sessions_count || 0}</div>
+                </div>
+                <div className="vs-glass" style={{ padding: 20, textAlign: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                   <div style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Interface</div>
+                   <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--green)' }}>{selectedStation.connector_type}</div>
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: 24, borderRadius: 20, marginBottom: 32 }}>
+                <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'Syne, sans-serif' }}>Live Bay Telemetry</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${selectedStation.total_bays}, 1fr)`, gap: 12 }}>
+                   {Array.from({ length: selectedStation.total_bays }).map((_, i) => (
+                     <div key={i} style={{ height: 60, borderRadius: 12, background: i < (selectedStation.total_bays - selectedStation.available_bays) ? 'rgba(0,240,255,0.1)' : 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border-2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: i < (selectedStation.total_bays - selectedStation.available_bays) ? 'var(--cyan)' : 'var(--text-muted)', marginBottom: 6, boxShadow: i < (selectedStation.total_bays - selectedStation.available_bays) ? '0 0 10px var(--cyan)' : 'none' }}></div>
+                        <span style={{ fontSize: '0.55rem', fontWeight: 800, opacity: 0.6 }}>B{i+1}</span>
+                     </div>
+                   ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 16 }}>
+                 <button className="vs-btn vs-btn-secondary" style={{ flex: 1, padding: 16 }} disabled={removeLoading === selectedStation.id} onClick={() => handleRemove(selectedStation.id)}>
+                    {removeLoading === selectedStation.id ? 'Processing...' : <><Trash2 size={16} color="var(--red)" /> Decommission Station</>}
+                 </button>
+                 <button className="vs-btn vs-btn-primary" style={{ flex: 1, padding: 16 }} onClick={() => setShowDetails(false)}>Close Inspector</button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Deploy Modal */}
       {showDeploy && (
         <div className="vs-modal-overlay" onClick={() => setShowDeploy(false)}>
           <div className="vs-modal vs-glass" onClick={e => e.stopPropagation()} style={{ maxWidth: 640, padding: 40, borderRadius: 32 }}>
@@ -264,42 +367,42 @@ export default function CpoPage() {
               </h2>
               <button className="vs-btn-icon" onClick={() => setShowDeploy(false)} style={{ background: 'rgba(255,255,255,0.05)' }}><X /></button>
             </div>
-            <form onSubmit={e => { e.preventDefault(); setShowDeploy(false); showToast('Infrastructure Deployment Initiated', 'success'); }}>
+            <form onSubmit={handleDeploy}>
                <div className="vs-float-group" style={{ marginBottom: 24 }}>
-                  <input className="vs-float-input" required placeholder=" " style={{ fontSize: '1rem', padding: '16px 18px' }} />
+                  <input className="vs-float-input" required placeholder=" " value={deployData.name} onChange={e => setDeployData({...deployData, name: e.target.value})} style={{ fontSize: '1rem', padding: '16px 18px' }} />
                   <label className="vs-float-label">Station Name / Alias</label>
                </div>
                
                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
                   <div className="vs-float-group">
-                    <input className="vs-float-input" required placeholder=" " type="number" step="any" />
+                    <input className="vs-float-input" required placeholder=" " type="number" step="any" value={deployData.lat} onChange={e => setDeployData({...deployData, lat: e.target.value})} />
                     <label className="vs-float-label">Latitude</label>
                   </div>
                   <div className="vs-float-group">
-                    <input className="vs-float-input" required placeholder=" " type="number" step="any" />
+                    <input className="vs-float-input" required placeholder=" " type="number" step="any" value={deployData.lng} onChange={e => setDeployData({...deployData, lng: e.target.value})} />
                     <label className="vs-float-label">Longitude</label>
                   </div>
                </div>
 
                <div className="vs-float-group" style={{ marginBottom: 24 }}>
-                  <input className="vs-float-input" required placeholder=" " />
+                  <input className="vs-float-input" required placeholder=" " value={deployData.address} onChange={e => setDeployData({...deployData, address: e.target.value})} />
                   <label className="vs-float-label">Physical Street Address</label>
                </div>
 
                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <label style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Interface Type</label>
-                    <select className="vs-input" style={{ background: 'var(--bg-deep)', borderRadius: 14 }}><option>CCS2 Combo (DC Fast)</option><option>Type 2 (AC Heavy)</option></select>
+                    <select className="vs-input" value={deployData.connector} onChange={e => setDeployData({...deployData, connector: e.target.value})} style={{ background: 'var(--bg-deep)', borderRadius: 14 }}><option>CCS2 Combo (DC Fast)</option><option>Type 2 (AC Heavy)</option></select>
                   </div>
                   <div className="vs-float-group" style={{ marginTop: 18 }}>
-                    <input className="vs-float-input" required placeholder=" " type="number" />
+                    <input className="vs-float-input" required placeholder=" " type="number" value={deployData.power} onChange={e => setDeployData({...deployData, power: e.target.value})} />
                     <label className="vs-float-label">Max Power (kW)</label>
                   </div>
                </div>
 
                <div className="form-actions" style={{ display: 'flex', gap: 16 }}>
                   <button type="button" className="vs-btn vs-btn-secondary" style={{ flex: 1, padding: 18, borderRadius: 16 }} onClick={() => setShowDeploy(false)}>Abort</button>
-                  <button type="submit" className="vs-btn vs-btn-primary" style={{ flex: 2, padding: 18, borderRadius: 16, fontSize: '1rem' }}>Authorize Deployment</button>
+                  <button type="submit" disabled={deployLoading} className="vs-btn vs-btn-primary" style={{ flex: 2, padding: 18, borderRadius: 16, fontSize: '1rem' }}>{deployLoading ? 'Deploying...' : 'Authorize Deployment'}</button>
                </div>
             </form>
           </div>

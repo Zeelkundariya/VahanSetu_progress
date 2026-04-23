@@ -23,16 +23,15 @@ function Protected({ children }) {
 }
 
 function AppRoutes() {
-  const { user } = useAuth();
   return (
     <Routes>
-      <Route path="/" element={user ? <Navigate to="/map" replace /> : <LandingPage />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/map"       element={<Protected><MapPage /></Protected>} />
       <Route path="/fleet"     element={<Protected><FleetPage /></Protected>} />
       <Route path="/cpo"       element={<Protected><CpoPage /></Protected>} />
       <Route path="/analytics" element={<Protected><AnalyticsPage /></Protected>} />
       <Route path="/profile"   element={<Protected><ProfilePage /></Protected>} />
-      <Route path="/premium"   element={<Protected><PremiumPage /></Protected>} />
+      <Route path="/premium"   element={<PremiumPage />} />
       <Route path="*"          element={<Navigate to="/" replace />} />
     </Routes>
   );

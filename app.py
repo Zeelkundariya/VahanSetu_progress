@@ -5,7 +5,7 @@
 #   Intelligence: Adaptive Trip Planning, Unified Telemetry, Host CRUD.
 # ══════════════════════════════════════════════════════════════════════
 
-from flask import Flask, jsonify, request, render_template, redirect, url_for, flash
+from flask import Flask, jsonify, request, render_template, redirect, url_for, flash, send_from_directory
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -13,13 +13,14 @@ from mailer import send_vahan_email
 import sqlite3
 import random
 import math
+import os
 import requests
 import time
 import jwt
 import concurrent.futures
 from datetime import datetime, timedelta
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='client/dist', static_url_path='/', template_folder='client/dist')
 app.config['JWT_SECRET'] = 'vahan-jwt-quantum-vault-2026'
 app.secret_key = 'vs-ultra-secure-key-2026'
 CORS(app)
@@ -99,7 +100,7 @@ init_db()
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'index'
+login_manager.login_view = 'serve'
 
 class User(UserMixin):
     def __init__(self, id, name, email, role, is_premium):
@@ -145,7 +146,7 @@ def validate_session():
             if request.path.startswith('/api/'):
                 return jsonify({'error': 'Session expired'}), 401
             flash('🛡️ Security Protocol Violation: Session token missing.', 'error')
-            return redirect(url_for('index'))
+            return redirect(url_for('serve'))
         
         payload = verify_jwt(token)
         if not payload or payload.get('user_id') != current_user.id:
@@ -153,15 +154,19 @@ def validate_session():
             if request.path.startswith('/api/'):
                 return jsonify({'error': 'Invalid token'}), 401
             flash('🛡️ Security Protocol Violation: Token mismatch.', 'error')
-            return redirect(url_for('index'))
+            return redirect(url_for('serve'))
     elif not current_user.is_authenticated and request.path.startswith('/api/') and request.path != '/api/me':
         return jsonify({'error': 'Authentication required'}), 401
 
 # ---------- Core Routing Engine ----------
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+# ── SERVE REACT FRONTEND ──
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists(app.static_folder + '/' + path):
+        return send_from_directory(app.static_folder, path)
+    return render_template("index.html")
 
 # ── JSON API: /api/me ──
 @app.route('/api/me')
@@ -184,7 +189,7 @@ def signup():
         if is_api:
             return jsonify({'success': False, 'message': 'Please fill all fields.'}), 400
         flash('Security Policy: All fields required.', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('serve'))
 
     conn = get_db_connection()
     try:
@@ -197,18 +202,18 @@ def signup():
         if is_api:
             return jsonify({'success': True, 'message': 'Account created! Please log in.'})
         flash('💎 Identity Provisioned: Please log in.', 'success')
-        return redirect(url_for('index'))
+        return redirect(url_for('serve'))
     except Exception as e:
         if is_api:
             return jsonify({'success': False, 'message': 'This email is already registered.'}), 409
         flash('Security Alert: Email already exists.', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('serve'))
     finally: conn.close()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
-        return redirect(url_for('index'))
+        return redirect(url_for('serve'))
     
     # Support both form-data and JSON
     data = request.get_json(silent=True) or {}
@@ -219,7 +224,7 @@ def login():
     if not email or not password:
         if is_api:
             return jsonify({'success': False, 'message': 'Crendentials required.'}), 400
-        return redirect(url_for('index'))
+        return redirect(url_for('serve'))
 
     conn = get_db_connection()
     u = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
@@ -258,12 +263,12 @@ def login():
     if is_api:
         return jsonify({'success': False, 'message': 'Invalid email or incorrect password.'}), 401
     flash('Authentication Failure: Invalid credentials.', 'error')
-    return redirect(url_for('index'))
+    return redirect(url_for('serve'))
 
 @app.route('/logout')
 def logout():
     logout_user()
-    resp = redirect(url_for('index')) if not request.args.get('api') else jsonify({'success': True})
+    resp = redirect(url_for('serve')) if not request.args.get('api') else jsonify({'success': True})
     resp.delete_cookie('vs_jwt_nexus')
     return resp
 
@@ -297,6 +302,126 @@ def api_fleet():
         })
     finally: conn.close()
 
+@app.route('/api/vehicle/lookup', methods=['POST'])
+@login_required
+def api_vehicle_lookup():
+    plate = (request.json or {}).get('plate_number', '').strip().upper()
+    if not plate: return jsonify({'status': 'error', 'message': 'Plate number required'}), 400
+    
+    # Mock Master Registry for Asset Discovery
+    registry = {
+        'GJ-01-TX-0001': {'name': 'Tesla Model 3', 'model': 'Long Range', 'cap': 82},
+        'GJ-01-AX-9999': {'name': 'Audi e-tron GT', 'model': 'Quattro', 'cap': 93},
+        'MH-01-EQ-7777': {'name': 'Mercedes-Benz EQS', 'model': '580 4Matic', 'cap': 107},
+        'GJ-18-NX-1001': {'name': 'Tata Nexon EV', 'model': 'Max ZS', 'cap': 40},
+        'GJ-18-MX-2002': {'name': 'Mahindra XUV400', 'model': 'EL Pro', 'cap': 39},
+        'DL-01-BY-1234': {'name': 'BYD Atto 3', 'model': 'Extended Range', 'cap': 60}
+    }
+    
+    data = registry.get(plate)
+    if not data:
+        # Generate a generic success for demo purposes if not in registry
+        data = {'name': 'Identified EV', 'model': 'Generic Class-A', 'cap': 55}
+        
+    return jsonify({
+        'status': 'success',
+        'data': {
+            'vehicle_name': data['name'],
+            'vehicle_model': data['model'],
+            'plate': plate,
+            'battery_capacity': data['cap']
+        }
+    })
+
+@app.route('/fleet/add', methods=['POST'])
+@login_required
+def fleet_add():
+    data = request.json or {}
+    name = data.get('vehicle_name')
+    plate = data.get('vehicle_number')
+    
+    conn = get_db_connection()
+    try:
+        # Ensure fleet exists for current user
+        fleet = conn.execute('SELECT id FROM fleets WHERE user_id = ?', (current_user.id,)).fetchone()
+        if not fleet:
+            conn.execute('INSERT INTO fleets (user_id, fleet_name) VALUES (?, ?)', (current_user.id, f"{current_user.name}'s Fleet"))
+            fleet_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+        else:
+            fleet_id = fleet['id']
+            
+        # Add vehicle with randomized telemetry
+        conn.execute('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, battery_pct, range_km, lat, lng, status, total_energy, total_cost) VALUES (?,?,?,?,?,?,?,?,?,?)',
+                     (fleet_id, name, plate, random.randint(30, 95), random.randint(150, 450), 23.0225, 72.5714, 'idle', 0, 0))
+        conn.commit()
+        return jsonify({'success': True})
+    finally: conn.close()
+
+@app.route('/api/fleet/optimize', methods=['POST'])
+@login_required
+def api_fleet_optimize():
+    conn = get_db_connection()
+    try:
+        fleet = conn.execute('SELECT id FROM fleets WHERE user_id = ?', (current_user.id,)).fetchone()
+        if not fleet: return jsonify({'status': 'error', 'message': 'No fleet found'}), 404
+        
+        vehicles = conn.execute('SELECT vehicle_name FROM fleet_vehicles WHERE fleet_id = ?', (fleet['id'],)).fetchall()
+        stations = conn.execute('SELECT name FROM stations LIMIT 3').fetchall()
+        
+        if not vehicles or not stations:
+            return jsonify({'status': 'error', 'message': 'Insufficient data for neural dispatch'}), 400
+            
+        assignments = []
+        for v in vehicles:
+            assignments.append({
+                'vehicle': v['vehicle_name'],
+                'station': random.choice(stations)['name']
+            })
+            
+        return jsonify({
+            'status': 'success',
+            'assignments': assignments
+        })
+    finally: conn.close()
+
+@app.route('/api/fleet/vehicle/<int:v_id>', methods=['DELETE'])
+@login_required
+def api_fleet_vehicle_delete(v_id):
+    conn = get_db_connection()
+    try:
+        # Verify vehicle belongs to user's fleet
+        fleet = conn.execute('SELECT id FROM fleets WHERE user_id = ?', (current_user.id,)).fetchone()
+        if not fleet: return jsonify({'success': False, 'message': 'Fleet not found'}), 404
+        
+        v = conn.execute('SELECT id FROM fleet_vehicles WHERE id = ? AND fleet_id = ?', (v_id, fleet['id'])).fetchone()
+        if not v: return jsonify({'success': False, 'message': 'Access denied: Asset not in fleetRegistry'}), 403
+        
+        conn.execute('DELETE FROM fleet_vehicles WHERE id = ?', (v_id,))
+        conn.commit()
+        return jsonify({'success': True})
+    finally: conn.close()
+
+@app.route('/api/fleet/vehicle/<int:v_id>', methods=['PATCH'])
+@login_required
+def api_fleet_vehicle_update(v_id):
+    data = request.json or {}
+    name = data.get('vehicle_name')
+    number = data.get('vehicle_number')
+    
+    conn = get_db_connection()
+    try:
+        fleet = conn.execute('SELECT id FROM fleets WHERE user_id = ?', (current_user.id,)).fetchone()
+        if not fleet: return jsonify({'success': False, 'message': 'Fleet not found'}), 404
+        
+        v = conn.execute('SELECT id FROM fleet_vehicles WHERE id = ? AND fleet_id = ?', (v_id, fleet['id'])).fetchone()
+        if not v: return jsonify({'success': False, 'message': 'Access denied'}), 403
+        
+        if name: conn.execute('UPDATE fleet_vehicles SET vehicle_name = ? WHERE id = ?', (name, v_id))
+        if number: conn.execute('UPDATE fleet_vehicles SET vehicle_number = ? WHERE id = ?', (number, v_id))
+        conn.commit()
+        return jsonify({'success': True})
+    finally: conn.close()
+
 @app.route('/api/host/dashboard')
 @login_required
 def api_host_dashboard():
@@ -312,6 +437,55 @@ def api_host_dashboard():
             'stats': {'revenue': round(float(agg['r'] or 0),2), 'kwh': round(float(agg['e'] or 0),1), 'sessions': int(agg['s'] or 0), 'revenue_growth': 12.4, 'network_uptime': 99.8, 'active_bays': sum(s['available_bays'] or 0 for s in owned), 'total_bays': sum(s['total_bays'] or 0 for s in owned)},
             'recent_events': [dict(e) for e in events]
         })
+    finally: conn.close()
+
+@app.route('/api/host/deploy', methods=['POST'])
+@login_required
+def api_host_deploy():
+    data = request.json or {}
+    name = data.get('name', '').strip()
+    address = data.get('address', '').strip()
+    lat = data.get('lat')
+    lng = data.get('lng')
+    connector = data.get('connector', 'CCS2 Combo')
+    power = data.get('power', 60)
+    bays = data.get('bays', 4)
+
+    if not name or not address or lat is None or lng is None:
+        return jsonify({'success': False, 'message': 'All coordinates and metadata required.'}), 400
+
+    conn = get_db_connection()
+    try:
+        conn.execute('INSERT INTO stations (name, address, lat, lng, connector_type, power_kw, total_bays, available_bays, owner_id) VALUES (?,?,?,?,?,?,?,?,?)',
+                     (name, address, float(lat), float(lng), connector, int(power), int(bays), int(bays), current_user.id))
+        conn.commit()
+        return jsonify({'success': True, 'message': f'Node {name} successfully initialized.'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally: conn.close()
+
+@app.route('/api/host/station/<int:station_id>', methods=['DELETE'])
+@login_required
+def api_host_station_delete(station_id):
+    conn = get_db_connection()
+    try:
+        # Security: verify ownership before deletion
+        station = conn.execute('SELECT owner_id FROM stations WHERE id = ?', (station_id,)).fetchone()
+        if not station:
+            return jsonify({'success': False, 'message': 'Station not found.'}), 404
+        
+        # Casting because current_user.id might be a string in some Flask configurations
+        if int(station['owner_id']) != int(current_user.id):
+            return jsonify({'success': False, 'message': 'Forbidden: Ownership verification failed.'}), 403
+        
+        # Also clean up associated charging sessions to maintain referential integrity
+        conn.execute('DELETE FROM charging_sessions WHERE station_id = ?', (station_id,))
+        conn.execute('DELETE FROM stations WHERE id = ?', (station_id,))
+        conn.commit()
+        return jsonify({'success': True, 'message': 'Infrastructure decommissioned successfully.'})
+    except Exception as e:
+        print(f"Station Deletion FAIL: {str(e)}") # Log for debug
+        return jsonify({'success': False, 'message': f'Server Error: {str(e)}'}), 500
     finally: conn.close()
 
 @app.route('/api/analytics_data')

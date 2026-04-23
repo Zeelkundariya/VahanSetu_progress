@@ -50,6 +50,9 @@ export default function FleetPage() {
   const [lookupData, setLookupData] = useState(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [sortBy, setSortBy] = useState('default');
+  const [editingVehicle, setEditingVehicle] = useState(null);
+  const [removeVehicleId, setRemoveVehicleId] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -71,6 +74,43 @@ export default function FleetPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRemoveVehicle = async (id) => {
+    if (!window.confirm('🛡️ SECURITY ALERT: Decommission this asset from the registry?')) return;
+    setRemoveVehicleId(id);
+    try {
+      const { data } = await api.delete(`/api/fleet/vehicle/${id}`);
+      if (data.success) {
+        showToast('Asset decommissioned', 'success');
+        fetchData();
+      }
+    } catch { showToast('Decommissioning failed', 'error'); }
+    finally { setRemoveVehicleId(null); }
+  };
+
+  const startEdit = (v) => {
+    setEditingVehicle({ ...v });
+  };
+
+  const handleUpdateVehicle = async () => {
+    setIsUpdating(true);
+    try {
+      const { data } = await api.patch(`/api/fleet/vehicle/${editingVehicle.id}`, {
+        vehicle_name: editingVehicle.vehicle_name,
+        vehicle_number: editingVehicle.vehicle_number
+      });
+      if (data.success) {
+        showToast('Asset metadata updated', 'success');
+        setEditingVehicle(null);
+        fetchData();
+      }
+    } catch { showToast('Update failed', 'error'); }
+    finally { setIsUpdating(false); }
+  };
+
+  const handleScheduleService = (v) => {
+    showToast(`Maintenance scheduled for ${v.vehicle_name}`, 'success');
   };
 
   const pushRandomIncident = () => {
@@ -306,10 +346,12 @@ export default function FleetPage() {
                     </div>
                     
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }}><Calendar size={14} /></button>
-                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }} onClick={() => window.location.href=`/map?lat=${v.lat}&lng=${v.lng}&asset=true`}><MapPin size={14} /></button>
-                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }}><Edit3 size={14} /></button>
-                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--red)' }}><Trash2 size={14} /></button>
+                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }} onClick={() => handleScheduleService(v)}><Calendar size={14} /></button>
+                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }} onClick={() => window.location.href=`/map?lat=${v.lat}&lng=${v.lng}&v_name=${v.vehicle_name}`}><MapPin size={14} /></button>
+                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }} onClick={() => startEdit(v)}><Edit3 size={14} /></button>
+                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--red)' }} onClick={() => handleRemoveVehicle(v.id)} disabled={removeVehicleId === v.id}>
+                        {removeVehicleId === v.id ? '...' : <Trash2 size={14} />}
+                      </button>
                     </div>
                   </div>
                 )})}
@@ -415,6 +457,31 @@ export default function FleetPage() {
                  <button className="vs-btn" style={{ width: '100%', marginTop: 10, background: 'none' }} onClick={() => setLookupData(null)}>Different Plate</button>
                </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal (New) */}
+      {editingVehicle && (
+        <div className="vs-modal-overlay" onClick={() => setEditingVehicle(null)}>
+          <div className="vs-modal vs-glass" onClick={e => e.stopPropagation()} style={{ maxWidth: 440, padding: 32 }}>
+            <div className="vs-flex-between" style={{ marginBottom: 20 }}>
+              <h2 className="vs-modal-title" style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.4rem', fontWeight: 800 }}>Update Asset</h2>
+              <button className="vs-btn-icon" onClick={() => setEditingVehicle(null)}><X /></button>
+            </div>
+            
+            <div className="vs-float-group" style={{ marginBottom: 12 }}>
+              <input className="vs-float-input" required placeholder=" " value={editingVehicle.vehicle_name} onChange={e => setEditingVehicle({...editingVehicle, vehicle_name: e.target.value})} />
+              <label className="vs-float-label">Vehicle Name</label>
+            </div>
+            <div className="vs-float-group" style={{ marginBottom: 24 }}>
+              <input className="vs-float-input" required placeholder=" " value={editingVehicle.vehicle_number} onChange={e => setEditingVehicle({...editingVehicle, vehicle_number: e.target.value.toUpperCase()})} />
+              <label className="vs-float-label">License Plate</label>
+            </div>
+            
+            <button className="vs-btn vs-btn-primary" style={{ width: '100%' }} onClick={handleUpdateVehicle} disabled={isUpdating}>
+               {isUpdating ? 'Pulsing Data...' : 'Confirm Update'}
+            </button>
           </div>
         </div>
       )}

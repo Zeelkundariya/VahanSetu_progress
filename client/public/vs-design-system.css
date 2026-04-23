@@ -1704,7 +1704,7 @@ select.vs-input { cursor: pointer; }
   justify-content: center;
   padding: 24px;
   animation: modal-fade-in 0.3s var(--ease-out);
-  display: none; /* Toggled via JS (style.display='flex') */
+  display: flex !important;
 }
 @keyframes modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
