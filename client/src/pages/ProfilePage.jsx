@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import { 
   ShieldCheck, Zap, Leaf, Settings2, Lock, Car, MapPin, 
@@ -10,8 +10,10 @@ import {
   LineElement, ArcElement, Tooltip, Legend, Filler
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
-import { api, showToast } from '../api';
+import { api, showToast, getProfile } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import Skeleton, { ProfileSkeleton } from '../components/Skeleton';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, 
@@ -20,33 +22,34 @@ ChartJS.register(
 
 export default function ProfilePage() {
   const { user, setUser } = useAuth();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
   const [editName, setEditName] = useState('');
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const res = await api.get('/api/profile_data');
-      setData(res.data);
-      setEditName(user?.name || '');
-    } catch (e) {
-      console.error("Profile sync failed", e);
-    } finally {
-      setLoading(false);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const res = await getProfile();
+      setEditName(res.data.user_name || user?.name || '');
+      return res.data;
     }
-  };
+  });
 
-  if (loading && !data) return (
-    <div className="vs-loading-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-deep)' }}>
-      <div className="vs-spinner"></div>
-      <span style={{ marginLeft: 16, color: 'var(--text-muted)', fontFamily: 'Syne, sans-serif' }}>Syncing Identity Hub...</span>
+  if (isLoading) return (
+    <div className="app">
+      <Navbar />
+      <div className="page-wrapper">
+        <div className="page-content" style={{ maxWidth: 1600 }}>
+          <div className="vs-page-header" style={{ marginBottom: 40 }}>
+            <Skeleton height="40px" width="300px" />
+            <Skeleton height="15px" width="500px" style={{ marginTop: 10 }} />
+          </div>
+          <ProfileSkeleton />
+        </div>
+      </div>
     </div>
   );
+
+  if (isError) return <div className="vs-error">Identity Hub Sync Failure. Check network node.</div>;
 
   const stats = data?.stats || {};
   const history = data?.history || [];

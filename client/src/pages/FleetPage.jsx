@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { api, showToast } from '../api';
+import React, { useState, useEffect } from 'react';
+import { api, showToast, getFleet } from '../api';
 import Navbar from '../components/Navbar';
 import { 
   Truck, ShieldCheck, BatteryCharging, CreditCard, Zap, 
@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
+import { useQuery } from '@tanstack/react-query';
+import Skeleton, { FleetSkeleton } from '../components/Skeleton';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -32,10 +34,14 @@ function CountUp({ value, suffix = '', prefix = '' }) {
   return <span>{prefix}{display.toLocaleString(undefined, { maximumFractionDigits: (value.toString().includes('.') ? 1 : 0) })}{suffix}</span>;
 }
 
+
+
 export default function FleetPage() {
-  const [vehicles, setVehicles] = useState([]);
-  const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['fleet'],
+    queryFn: getFleet
+  });
+
   const [aiResult, setAiResult] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -51,27 +57,13 @@ export default function FleetPage() {
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [sortBy, setSortBy] = useState('default');
 
+  const vehicles = data?.data?.fleet_vehicles || [];
+  const sessions = data?.data?.fleet_sessions || [];
+
   useEffect(() => {
-    fetchData();
     const interval = setInterval(pushRandomIncident, 5000);
     return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-     if (window.vsAnimate) window.vsAnimate.refreshTilt();
-  }, [vehicles.length]);
-
-  const fetchData = async () => {
-    try {
-      const { data } = await api.get('/api/fleet');
-      setVehicles(data.fleet_vehicles || []);
-      setSessions(data.fleet_sessions || []);
-    } catch {
-      showToast('Registry sync failed', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [vehicles]);
 
   const pushRandomIncident = () => {
     if (vehicles.length === 0) return;
@@ -161,12 +153,18 @@ export default function FleetPage() {
     }]
   };
 
-  if (loading) return (
-     <div className="vs-loading-wrap">
-       <div className="vs-spinner"></div>
-       <span>Syncing Fleet Registry...</span>
-     </div>
+  if (isLoading) return (
+    <div className="app">
+      <Navbar />
+      <div className="page-wrapper">
+        <div className="page-content">
+          <FleetSkeleton />
+        </div>
+      </div>
+    </div>
   );
+
+  if (isError) return <div className="vs-error">Fleet Registry Sync Failure. Check network node.</div>;
 
   return (
     <div className="app">

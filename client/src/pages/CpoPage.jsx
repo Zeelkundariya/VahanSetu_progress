@@ -1,47 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import { 
   Zap, Download, Plus, Server, IndianRupee, TrendingUp, Activity, 
   Layout, Inbox, MapPin, ExternalLink, Trash2, Trophy, Terminal, 
   HeartPulse, X, ShieldCheck
 } from 'lucide-react';
-import { api, showToast } from '../api';
+import { useQuery } from '@tanstack/react-query';
+import { api, showToast, getCpo } from '../api';
+import Skeleton, { CpoSkeleton } from '../components/Skeleton';
 
 export default function CpoPage() {
-  const [stations, setStations] = useState([]);
-  const [stats, setStats] = useState({
-    active_bays: 0, total_bays: 0, revenue: 0, revenue_growth: 0,
-    kwh: 0, sessions: 0, network_uptime: 99.8
+  const { data: resp, isLoading, isError } = useQuery({
+    queryKey: ['cpo'],
+    queryFn: getCpo,
+    refetchInterval: 15000 // Real-time grid sync
   });
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+
   const [showDeploy, setShowDeploy] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000); // Live sync
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const res = await api.get('/api/host/dashboard');
-      if (res.data.status === 'success') {
-        setStations(res.data.stations || []);
-        if (res.data.stats) setStats(res.data.stats);
-        if (res.data.recent_events) setEvents(res.data.recent_events);
-      }
-    } catch (e) {
-      console.error("Stewardship sync failed", e);
-    } finally {
-      setLoading(false);
-    }
+  const stations = resp?.data?.stations || [];
+  const stats = resp?.data?.stats || {
+    active_bays: 0, total_bays: 0, revenue: 0, revenue_growth: 0,
+    kwh: 0, sessions: 0, network_uptime: 99.8
   };
+  const events = resp?.data?.recent_events || [];
 
-  if (loading && stations.length === 0) return (
-    <div className="vs-loading-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-deep)' }}>
-      <div className="vs-spinner"></div>
-      <span style={{ marginLeft: 16, color: 'var(--text-muted)', fontFamily: 'Syne, sans-serif' }}>Initializing Infrastructure Console...</span>
+  if (isLoading) return (
+    <div className="app">
+      <Navbar />
+      <div className="page-wrapper">
+        <div className="page-content" style={{ maxWidth: 1680 }}>
+           <CpoSkeleton />
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isError) return (
+    <div className="app">
+      <Navbar />
+      <div className="page-wrapper">
+        <div className="vs-error-box vs-glass" style={{ margin: 40, padding: 40, textAlign: 'center', borderRadius: 24 }}>
+           <h2 style={{ color: 'var(--red)', marginBottom: 12 }}>Infrastructure Console Offline</h2>
+           <p style={{ color: 'var(--text-muted)' }}>The stewardship node is currently unreachable. Check your grid connection.</p>
+        </div>
+      </div>
     </div>
   );
 

@@ -13,6 +13,7 @@ export default defineConfig({
       '/logout': { target: 'http://127.0.0.1:5000', changeOrigin: true, secure: false },
       '/premium': { target: 'http://127.0.0.1:5000', changeOrigin: true, secure: false },
       '/fleet': { target: 'http://127.0.0.1:5000', changeOrigin: true, secure: false },
+      '/trip': { target: 'http://127.0.0.1:5000', changeOrigin: true, secure: false },
     }
   }
 })

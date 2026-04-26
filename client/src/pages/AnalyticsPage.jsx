@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import { 
   BarChart3, Activity, Zap, IndianRupee, Crown, 
@@ -9,7 +9,9 @@ import {
   LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
-import { api, showToast } from '../api';
+import { useQuery } from '@tanstack/react-query';
+import { api, showToast, getAnalytics } from '../api';
+import Skeleton, { AnalyticsSkeleton } from '../components/Skeleton';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, 
@@ -17,45 +19,44 @@ ChartJS.register(
 );
 
 export default function AnalyticsPage() {
-  const [data, setData] = useState(null);
   const [filter, setFilter] = useState({ region: 'ALL', cycle: '30D', asset: 'ALL' });
-  const [loading, setLoading] = useState(true);
   const [syncTime, setSyncTime] = useState(new Date().toLocaleTimeString());
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 60000); // Auto-sync
-    return () => clearInterval(interval);
-  }, []);
+  const { data: resp, isLoading, isError, refetch } = useQuery({
+    queryKey: ['analytics', filter],
+    queryFn: () => getAnalytics(filter)
+  });
 
-  const fetchData = async () => {
-    try {
-      const { data } = await api.get('/api/analytics_data', { params: filter });
-      setData(data);
-      setSyncTime(new Date().toLocaleTimeString());
-    } catch (e) {
-      console.error("Analytics sync failed", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const data = resp?.data;
 
   const handleFilterChange = (key, val) => {
-    const newFilter = { ...filter, [key]: val };
-    setFilter(newFilter);
-    setLoading(true);
-    api.get('/api/analytics_data', { params: newFilter }).then(r => {
-      setData(r.data);
-      setSyncTime(new Date().toLocaleTimeString());
-      setLoading(false);
-      showToast('Intelligence Feed Updated', 'success');
-    });
+    setFilter(prev => ({ ...prev, [key]: val }));
+    showToast('Intelligence Feed Filtering...', 'info');
   };
 
-  if (loading && !data) return (
-    <div className="vs-loading-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-deep)' }}>
-      <div className="vs-spinner"></div>
-      <span style={{ marginLeft: 16, color: 'var(--text-muted)', fontFamily: 'Syne, sans-serif' }}>Initializing Intelligence Hub...</span>
+
+
+  if (isLoading) return (
+    <div className="app">
+      <Navbar />
+      <div className="page-wrapper">
+        <div className="page-content" style={{ maxWidth: 1680 }}>
+           <AnalyticsSkeleton />
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isError) return (
+    <div className="app">
+      <Navbar />
+      <div className="page-wrapper">
+        <div className="vs-error-box vs-glass" style={{ margin: 40, padding: 40, textAlign: 'center', borderRadius: 24 }}>
+           <h2 style={{ color: 'var(--red)', marginBottom: 12 }}>Intelligence Hub Offline</h2>
+           <p style={{ color: 'var(--text-muted)' }}>We encountered a node sync failure. Please check your network telemetry.</p>
+           <button className="vs-btn vs-btn-primary" style={{ marginTop: 20 }} onClick={() => refetch()}>Retry Sync</button>
+        </div>
+      </div>
     </div>
   );
 
@@ -140,7 +141,7 @@ export default function AnalyticsPage() {
               <button className="vs-btn vs-btn-secondary vs-icon-text" style={{ padding: '12px 24px' }}>
                 <Download size={15} /> Report
               </button>
-              <button className="vs-btn vs-btn-primary vs-icon-text" onClick={fetchData} style={{ padding: '12px 24px' }}>
+              <button className="vs-btn vs-btn-primary vs-icon-text" onClick={() => refetch()} style={{ padding: '12px 24px' }}>
                 <RefreshCcw size={15} /> Sync
               </button>
             </div>
@@ -277,9 +278,9 @@ export default function AnalyticsPage() {
                         <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '0.85rem', fontWeight: 800, color: 'var(--cyan)', minWidth: 36 }}>{s.utilization}%</span>
                       </div>
                     </td>
-                    <td style={{ fontWeight: 700, fontFamily: 'monospace' }}>{s.sessions}</td>
-                    <td><span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{s.energy.toLocaleString()}</span> <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>kWh</span></td>
-                    <td><span style={{ color: 'var(--gold)', fontWeight: 800 }}>₹{s.revenue.toLocaleString()}</span></td>
+                    <td style={{ fontWeight: 700, fontFamily: 'monospace' }}>{s.sessions || 0}</td>
+                    <td><span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{(s.energy || 0).toLocaleString()}</span> <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>kWh</span></td>
+                    <td><span style={{ color: 'var(--gold)', fontWeight: 800 }}>₹{(s.revenue || 0).toLocaleString()}</span></td>
                     <td>
                        <span style={{ 
                          fontSize: '0.6rem', fontWeight: 800, padding: '4px 10px', borderRadius: 6, textTransform: 'uppercase',
