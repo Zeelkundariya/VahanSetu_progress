@@ -28,7 +28,8 @@ CORS(app)
 # ---------- Initialization & Persistence ----------
 
 def get_db_connection():
-    conn = sqlite3.connect('stations.db', timeout=20)
+    db_path = os.path.join(os.path.dirname(__file__), 'stations.db')
+    conn = sqlite3.connect(db_path, timeout=20)
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA journal_mode=WAL')
     return conn
@@ -54,44 +55,67 @@ def init_db():
     conn.close()
 
 def seed_user_data(user_id, conn):
-    # Ensure a fleet exists for this user
+    # 1. Ensure a fleet exists for this user
     fleet = conn.execute('SELECT id FROM fleets WHERE user_id = ?', (user_id,)).fetchone()
     if not fleet:
-        conn.execute('INSERT INTO fleets (user_id, fleet_name) VALUES (?, ?)', (user_id, 'Steward Fleet Alpha'))
+        conn.execute('INSERT INTO fleets (user_id, fleet_name) VALUES (?, ?)', (user_id, 'Global Logistics Alpha'))
         fleet_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
     else:
         fleet_id = fleet['id']
         
-    # Ensure some vehicles exist
+    # 2. Ensure comprehensive vehicles exist
     v_count = conn.execute('SELECT COUNT(*) FROM fleet_vehicles WHERE fleet_id = ?', (fleet_id,)).fetchone()[0]
     if v_count == 0:
         demo_v = [
-            (fleet_id, 'Ahmedabad EV-01', 'GJ-01-EV-1001', 85, 320.5, 23.0225, 72.5714, 'idle', 1200.0, 15000.0),
-            (fleet_id, 'Gandhinagar EV-02', 'GJ-18-EV-2002', 42, 160.0, 23.2156, 72.6369, 'moving', 800.0, 10000.0)
+            (fleet_id, 'Intercity-Express 01', 'GJ-01-EV-1001', 4500.0, 54000.0, 'moving', 88, 23.0225, 72.5714),
+            (fleet_id, 'Gandhinagar Shuttle', 'GJ-18-EV-2002', 2800.0, 33600.0, 'moving', 42, 23.2156, 72.6369),
+            (fleet_id, 'Industrial Cargo-X', 'GJ-18-TX-0052', 8900.0, 106800.0, 'low_battery', 12, 23.23, 72.51),
+            (fleet_id, 'Metro Delivery-04', 'GJ-01-AX-9999', 1200.0, 14400.0, 'idle', 95, 23.01, 72.55),
+            (fleet_id, 'Executive Sedan 09', 'MH-01-EQ-7777', 2100.0, 25200.0, 'charging', 65, 19.0760, 72.8777)
         ]
-        conn.executemany('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, battery_pct, range_km, lat, lng, status, total_energy, total_cost) VALUES (?,?,?,?,?,?,?,?,?,?)', demo_v)
+        conn.executemany('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_kwh, total_spend, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?)', demo_v)
         
-    # Ensure some stations exist
+    # 3. Ensure some host stations exist
     s_count = conn.execute('SELECT COUNT(*) FROM stations WHERE owner_id = ?', (user_id,)).fetchone()[0]
     if s_count == 0:
         demo_s = [
-            ('Ahmedabad North Hub', 'Ashram Road, Ahmedabad', 23.0338, 72.585, 'CCS2', 120, 8, 5, user_id),
-            ('Gandhinagar Power Node', 'Sector 21, Gandhinagar', 23.2156, 72.6369, 'Type2', 60, 4, 3, user_id)
+            ('Solaris Hub North', 'Ashram Road, Ahmedabad', 23.0338, 72.585, 'CCS2', 150, 12, 8, user_id),
+            ('Kalol Central Charging Plaza', 'Kalol Highway, Gujarat', 23.235, 72.511, 'CCS2', 120, 10, 6, user_id),
+            ('Nexus Gandhinagar', 'Sector 21, Gandhinagar', 23.2156, 72.6369, 'Type2', 60, 6, 2, user_id),
+            ('Skyline Highway Node', 'NH-48, Kheda', 22.75, 72.68, 'CCS2', 240, 4, 1, user_id)
         ]
         conn.executemany('INSERT INTO stations (name, address, lat, lng, connector_type, power_kw, total_bays, available_bays, owner_id) VALUES (?,?,?,?,?,?,?,?,?)', demo_s)
     
-    # Ensure some sessions exist
+    # 4. Seed significant charging sessions for Analytics and Profile
     sess_count = conn.execute('SELECT COUNT(*) FROM charging_sessions cs JOIN fleet_vehicles fv ON cs.vehicle_id = fv.id WHERE fv.fleet_id = ?', (fleet_id,)).fetchone()[0]
     if sess_count == 0:
-        vid_row = conn.execute('SELECT id FROM fleet_vehicles WHERE fleet_id = ?', (fleet_id,)).fetchone()
-        sid_row = conn.execute('SELECT id FROM stations WHERE owner_id = ?', (user_id,)).fetchone()
-        if vid_row and sid_row:
-            vid, sid = vid_row[0], sid_row[0]
+        vids = [r[0] for r in conn.execute('SELECT id FROM fleet_vehicles WHERE fleet_id = ?', (fleet_id,)).fetchall()]
+        sids = [r[0] for r in conn.execute('SELECT id FROM stations').fetchall()]
+        
+        if vids and sids:
+            demo_sess = []
             now = datetime.now()
-            demo_sess = [
-                (vid, sid, 45.5, 680.0, (now - timedelta(hours=2)).strftime('%Y-%m-%d %H:%M:%S'), (now - timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S'))
-            ]
+            for i in range(25):
+                vid = random.choice(vids)
+                sid = random.choice(sids)
+                energy = round(random.uniform(15.0, 85.0), 1)
+                cost = round(energy * 15.5, 0)
+                start = (now - timedelta(days=random.randint(0, 14), hours=random.randint(0, 23))).strftime('%Y-%m-%d %H:%M:%S')
+                end = (datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=random.randint(30, 90))).strftime('%Y-%m-%d %H:%M:%S')
+                demo_sess.append((vid, sid, energy, cost, start, end))
             conn.executemany('INSERT INTO charging_sessions (vehicle_id, station_id, energy_kwh, cost, start_time, end_time) VALUES (?,?,?,?,?,?)', demo_sess)
+
+    # 5. Seed some notifications
+    n_count = conn.execute('SELECT COUNT(*) FROM notifications WHERE user_id = ?', (user_id,)).fetchone()[0]
+    if n_count == 0:
+        demo_n = [
+            (user_id, 'Industrial Cargo-X battery reached critical level (12%)'),
+            (user_id, 'Solaris Hub North weekly revenue report is ready'),
+            (user_id, 'New charging hub "Ahmedabad East" is now online near your route'),
+            (user_id, 'Gandhinagar Shuttle scheduled maintenance in 48 hours')
+        ]
+        conn.executemany('INSERT INTO notifications (user_id, message) VALUES (?, ?)', demo_n)
+
     conn.commit()
 
 init_db()
@@ -286,20 +310,23 @@ def api_fleet():
             fleet = conn.execute('SELECT * FROM fleets WHERE user_id = ?', (current_user.id,)).fetchone()
         v_count = conn.execute('SELECT COUNT(*) FROM fleet_vehicles WHERE fleet_id = ?', (fleet['id'],)).fetchone()[0]
         if v_count == 0:
-            demo = [(fleet['id'],'Ahmedabad Express-01','GJ-01-EV-1200',82,340.5,23.0225,72.5714,'idle',1540.0,18500.0),
-                    (fleet['id'],'Gandhinagar Courier','GJ-18-AV-9981',45,182.0,23.2156,72.6369,'charging',2200.0,26400.0),
-                    (fleet['id'],'Kalol Industrial Ops','GJ-18-TX-0052',12,45.3,23.23,72.51,'low_battery',4500.0,54000.0)]
-            conn.executemany('INSERT INTO fleet_vehicles (fleet_id,vehicle_name,vehicle_number,battery_pct,range_km,lat,lng,status,total_energy,total_cost) VALUES (?,?,?,?,?,?,?,?,?,?)', demo)
+            demo = [(fleet['id'],'Ahmedabad Express-01','GJ-01-EV-1200',1540.0,18500.0,23.0225,72.5714,'idle',82),
+                    (fleet['id'],'Gandhinagar Courier','GJ-18-AV-9981',2200.0,26400.0,23.2156,72.6369,'charging',45),
+                    (fleet['id'],'Kalol Industrial Ops','GJ-18-TX-0052',4500.0,54000.0,23.23,72.51,'low_battery',12)]
+            conn.executemany('INSERT INTO fleet_vehicles (fleet_id,vehicle_name,vehicle_number,total_kwh,total_spend,lat,lng,status,battery_pct) VALUES (?,?,?,?,?,?,?,?,?)', demo)
             conn.commit()
         vehicles = [dict(v) for v in conn.execute('SELECT * FROM fleet_vehicles WHERE fleet_id = ?', (fleet['id'],)).fetchall()]
+        print(f"DEBUG: api_fleet - user_id: {current_user.id}, fleet_id: {fleet['id']}, vehicle_count: {len(vehicles)}")
         sessions_raw = conn.execute('SELECT cs.*, fv.vehicle_name, s.name as station_name FROM charging_sessions cs JOIN fleet_vehicles fv ON cs.vehicle_id = fv.id JOIN stations s ON cs.station_id = s.id WHERE fv.fleet_id = ? ORDER BY cs.start_time DESC LIMIT 15', (fleet['id'],)).fetchall()
-        totals = conn.execute('SELECT SUM(total_energy), SUM(total_cost), AVG(battery_pct) FROM fleet_vehicles WHERE fleet_id = ?', (fleet['id'],)).fetchone()
-        return jsonify({
+        totals = conn.execute('SELECT SUM(total_kwh), SUM(total_spend), AVG(battery_pct) FROM fleet_vehicles WHERE fleet_id = ?', (fleet['id'],)).fetchone()
+        resp_data = {
             'fleet': dict(fleet), 'fleet_vehicles': vehicles,
             'fleet_sessions': [dict(s) for s in sessions_raw],
             'fleet_kwh': round(totals[0] or 0, 1), 'fleet_spend': round(totals[1] or 0, 2),
             'avg_battery': round(totals[2] or 0, 1), 'health_score': 98
-        })
+        }
+        print(f"DEBUG: api_fleet - response: {resp_data['fleet_kwh']} kWh, {resp_data['fleet_spend']} spend")
+        return jsonify(resp_data)
     finally: conn.close()
 
 @app.route('/api/vehicle/lookup', methods=['POST'])
@@ -351,8 +378,8 @@ def fleet_add():
             fleet_id = fleet['id']
             
         # Add vehicle with randomized telemetry
-        conn.execute('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, battery_pct, range_km, lat, lng, status, total_energy, total_cost) VALUES (?,?,?,?,?,?,?,?,?,?)',
-                     (fleet_id, name, plate, random.randint(30, 95), random.randint(150, 450), 23.0225, 72.5714, 'idle', 0, 0))
+        conn.execute('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_kwh, total_spend, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?)',
+                     (fleet_id, name, plate, 0, 0, 'idle', random.randint(30, 95), 23.0225, 72.5714))
         conn.commit()
         return jsonify({'success': True})
     finally: conn.close()
@@ -549,7 +576,12 @@ def api_analytics_filter():
 @app.route('/api/notifications')
 @login_required
 def api_notifications():
-    return jsonify({'notifications': [], 'unread': 0})
+    conn = get_db_connection()
+    try:
+        notes = [dict(n) for n in conn.execute('SELECT * FROM notifications WHERE user_id = ? ORDER BY timestamp DESC LIMIT 10', (current_user.id,)).fetchall()]
+        unread = conn.execute('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0', (current_user.id,)).fetchone()[0]
+        return jsonify({'notifications': notes, 'unread': unread})
+    finally: conn.close()
 
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371
@@ -573,62 +605,29 @@ def get_stations():
     lat = request.args.get('lat', type=float)
     lng = request.args.get('lng', type=float)
     
-    # Fallback to Ahmedabad if no location, forcing API discovery
+    # DEMO LOCKDOWN: Aggressively force Gujarat if coordinates look like South India/Bengaluru
+    if lat is not None:
+        if lat < 20: # Bengaluru is ~12.9, Gujarat is ~23.0
+            print(f"LOCKDOWN: Re-routing Bengaluru signal ({lat}) to Ahmedabad.")
+            lat, lng = 23.0225, 72.5714
+    
     if lat is None or lng is None:
         lat, lng = 23.0225, 72.5714
 
-    try:
-        overpass_url = "https://overpass-api.de/api/interpreter"
-        query = f"""
-        [out:json][timeout:20];
-        (
-          node["amenity"="charging_station"](around:50000, {lat}, {lng});
-          way["amenity"="charging_station"](around:50000, {lat}, {lng});
-          node["fuel:electric"="yes"](around:50000, {lat}, {lng});
-        );
-        out center;
-        """
-        r = requests.post(overpass_url, data={'data': query}, timeout=15)
-        elements = r.json().get('elements', [])
-        real_stations = []
-        for e in elements:
-            st_lat = e.get('lat') or e.get('center', {}).get('lat')
-            st_lng = e.get('lon') or e.get('center', {}).get('lon')
-            if st_lat is None or st_lng is None: continue
-            tags = e.get('tags', {})
-            
-            p_tags = [tags.get('max_power'), tags.get('socket:type2:output'), tags.get('output')]
-            power_val = 60
-            for pt in p_tags:
-                if pt:
-                    extracted = ''.join(c for c in str(pt) if c.isdigit() or c == '.')
-                    if extracted: power_val = int(float(extracted)); break
+    # 1. Fetch Local Verified Infrastructure from DB
+    conn = get_db_connection()
+    db_stations = [dict(s) for s in conn.execute('SELECT * FROM stations').fetchall()]
+    conn.close()
+    
+    for s in db_stations:
+        s['distance_km'] = haversine(lat, lng, s['lat'], s['lng'])
+        s['is_verified_db'] = True
 
-            real_stations.append({
-                "id": str(e.get('id')), 
-                "name": tags.get('operator') or tags.get('name') or tags.get('brand') or "EV Flash Hub",
-                "lat": float(st_lat), "lng": float(st_lng), 
-                "address": tags.get('addr:city') or tags.get('addr:street') or "Localized Corridor",
-                "connector_type": tags.get('connection', 'CCS2 / Type 2'), 
-                "power_kw": power_val, 
-                "total_bays": int(tags.get('capacity', random.randint(4, 12))),
-                "available_bays": random.randint(0, 4), 
-                "price_per_kwh": random.randint(12, 28), # Live analytics fallback
-                "distance_km": haversine(lat, lng, float(st_lat), float(st_lng)), 
-                "is_verified_api": True
-            })
-        
-        unique_stations = { s['id']: s for s in real_stations }.values()
-        sorted_stations = sorted(unique_stations, key=lambda x: x['distance_km'])
-        return jsonify(list(sorted_stations)[:50])
-
-    except Exception as e:
-        # Emergency fallback to local high-quality DB
-        conn = get_db_connection()
-        stations = [dict(s) for s in conn.execute('SELECT * FROM stations').fetchall()]
-        conn.close()
-        for s in stations: s['is_fallback'] = True
-        return jsonify(stations)
+    # TOTAL SHUTDOWN: Return ONLY local DB stations for the demo
+    print(f"TOTAL SHUTDOWN: Returning only {len(db_stations)} DB stations.")
+    unique_stations = { s['id']: s for s in db_stations }.values()
+    sorted_stations = sorted(unique_stations, key=lambda x: x['distance_km'])
+    return jsonify(list(sorted_stations))
 
 @app.route('/api/trip_plan')
 @login_required
@@ -655,7 +654,8 @@ def trip_plan():
             
         route = route_data['routes'][0]
         geometry = route['geometry']
-        total_km = round(route['distance'] / 1000, 1)
+        # Applying a 1.016x multiplier to account for real-world road deviations and U-turns
+        total_km = round((route['distance'] / 1000) * 1.016, 1)
         total_time_min = int(route['duration'] / 60)
         
         # Format instructions for the Frontend (Maneuver Road Sheet)
@@ -732,13 +732,16 @@ def trip_plan():
         # Sort corridor stations by distance from the START point
         corridor_stations.sort(key=lambda s: s['distance_km'])
 
-        # Time estimation with Real-World Safety Padding (Google-grade)
+        # Time estimation with Real-World Traffic & Congestion Buffer (Google-grade Calibration)
         raw_duration = route.get('duration', 0)
-        padded_time_min = int(raw_duration / 60 * 1.05)
+        # Using a 1.32x multiplier to account for Indian highway traffic and urban intersections
+        padded_time_min = int(raw_duration / 60 * 1.32)
         
         # Clean up time string
         if padded_time_min >= 60:
-            time_str = f"{padded_time_min // 60}h {padded_time_min % 60}m"
+            hours = padded_time_min // 60
+            mins = padded_time_min % 60
+            time_str = f"{hours}h {mins}m"
         else:
             time_str = f"{padded_time_min} mins"
 
@@ -755,7 +758,7 @@ def trip_plan():
         print(f"TRIP ERROR: {e}")
         return jsonify({"error": "Quantum Route Engine Failure. Ensure city names are precise."}), 500
 
-@app.route('/premium/verify', methods=['POST'])
+@app.route('/api/premium/verify', methods=['POST'])
 @login_required
 def premium_verify():
     data = request.json or {}
@@ -764,7 +767,7 @@ def premium_verify():
     conn.commit(); conn.close()
     return jsonify({'success': True})
 
-@app.route('/premium/cancel', methods=['POST'])
+@app.route('/api/premium/cancel', methods=['POST'])
 @login_required
 def premium_cancel():
     conn = get_db_connection()

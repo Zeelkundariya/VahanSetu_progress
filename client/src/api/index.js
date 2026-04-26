@@ -32,11 +32,7 @@ export const updateProfile = (name) => api.post('/api/profile/update', { name })
 export const changePw = (current, newPw, confirm) => api.post('/api/change_password', { current_password: current, new_password: newPw, confirm_password: confirm });
 export const verifyPremium = (payment_id, plan) => api.post('/premium/verify', { payment_id, plan });
 export const cancelPremium = () => api.post('/premium/cancel');
-export const addStation = (data) => {
-  const form = new FormData();
-  Object.entries(data).forEach(([k, v]) => form.append(k, v));
-  return axios.post('/api/host/add_station', form, { withCredentials: true });
-};
-export const deleteStation = (id) => axios.post(`/api/host/delete_station/${id}`, {}, { withCredentials: true });
+export const addStation = (data) => api.post('/api/host/deploy', data);
+export const deleteStation = (id) => api.delete(`/api/host/station/${id}`);
 
 export default api;
