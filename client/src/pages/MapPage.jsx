@@ -313,7 +313,15 @@ export default function MapPage() {
 
   const MapSetter = ({ setMap }) => {
     const map = useMap();
-    useEffect(() => { setMap(map); }, [map, setMap]);
+    useEffect(() => {
+      if (map) {
+        setMap(map);
+        // Force recalculate size to fix black/gray map area
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 500);
+      }
+    }, [map, setMap]);
     return null;
   };
 

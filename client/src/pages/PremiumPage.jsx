@@ -22,7 +22,7 @@ export default function PremiumPage() {
     await new Promise(r => setTimeout(r, 2000)); // Realism
 
     try {
-      const res = await api.post('/premium/verify', { 
+      const res = await api.post('/api/premium/verify', { 
         payment_id: 'VS_SIM_' + Math.random().toString(36).substr(2,9), 
         plan 
       });
@@ -45,7 +45,7 @@ export default function PremiumPage() {
     if (!window.confirm('De-provision your premium identity? You will lose Vault access instantly.')) return;
     setLoading(true);
     try {
-      const res = await api.post('/premium/cancel');
+      const res = await api.post('/api/premium/cancel');
       if (res.data.success) {
         showToast('⚖️ Identity Reset to Baseline.', 'info');
         setUser({ ...user, is_premium: 0 });
