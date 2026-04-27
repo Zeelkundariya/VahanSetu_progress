@@ -25,6 +25,44 @@ app.config['JWT_SECRET'] = 'vahan-jwt-quantum-vault-2026'
 app.secret_key = 'vs-ultra-secure-key-2026'
 CORS(app)
 
+# ── VAHAN INTELLIGENCE: SIMULATION & PREDICTION ENGINE ──────────────────
+class VahanIntelligence:
+    @staticmethod
+    def get_predictive_pricing():
+        hour = datetime.now().hour
+        conn = get_db_connection()
+        forecast = conn.execute('SELECT * FROM grid_forecast WHERE hour = ?', (hour,)).fetchone()
+        conn.close()
+        base_price = 18.5
+        if forecast:
+            return round(base_price * forecast['price_multiplier'], 2)
+        return base_price
+
+    @staticmethod
+    def simulate_ocpp_pulse():
+        """Simulates real-time hardware pings that update station availability."""
+        conn = get_db_connection()
+        stations = conn.execute('SELECT id, total_bays FROM stations').fetchall()
+        for s in stations:
+            # Simulate real-world usage fluctuations
+            change = random.choice([-1, 0, 1])
+            new_avail = max(0, min(s['total_bays'], random.randint(0, s['total_bays'])))
+            conn.execute('UPDATE stations SET available_bays = ?, current_load = ? WHERE id = ?', 
+                        (new_avail, random.uniform(20.0, 95.0), s['id']))
+        conn.commit()
+        conn.close()
+
+# Start Simulation background thread
+def run_simulations():
+    while True:
+        try:
+            VahanIntelligence.simulate_ocpp_pulse()
+            time.sleep(30) # Pulse every 30 seconds
+        except: pass
+
+import threading
+threading.Thread(target=run_simulations, daemon=True).start()
+
 # ---------- Initialization & Persistence ----------
 
 def get_db_connection():
@@ -36,14 +74,21 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
-    conn.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT UNIQUE, password TEXT, role TEXT DEFAULT "user", is_premium INTEGER DEFAULT 0)')
+    conn.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT UNIQUE, password TEXT, role TEXT DEFAULT "user", is_premium INTEGER DEFAULT 0, carbon_credits REAL DEFAULT 0.0)')
     conn.execute('CREATE TABLE IF NOT EXISTS fleets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, fleet_name TEXT)')
-    conn.execute('CREATE TABLE IF NOT EXISTS fleet_vehicles (id INTEGER PRIMARY KEY AUTOINCREMENT, fleet_id INTEGER, vehicle_name TEXT, vehicle_number TEXT, battery_pct INTEGER, range_km REAL, lat REAL, lng REAL, status TEXT, total_energy REAL, total_cost REAL)')
-    conn.execute('CREATE TABLE IF NOT EXISTS stations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, address TEXT, lat REAL, lng REAL, connector_type TEXT, power_kw INTEGER, total_bays INTEGER, available_bays INTEGER, owner_id INTEGER)')
-    conn.execute('CREATE TABLE IF NOT EXISTS charging_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, vehicle_id INTEGER, station_id INTEGER, energy_kwh REAL, cost REAL, start_time TEXT, end_time TEXT)')
+    conn.execute('CREATE TABLE IF NOT EXISTS fleet_vehicles (id INTEGER PRIMARY KEY AUTOINCREMENT, fleet_id INTEGER, vehicle_name TEXT, vehicle_number TEXT, battery_pct INTEGER, range_km REAL, lat REAL, lng REAL, status TEXT, total_energy REAL, total_cost REAL, battery_temp REAL DEFAULT 25.0, cell_voltage REAL DEFAULT 3.7)')
+    conn.execute('CREATE TABLE IF NOT EXISTS stations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, address TEXT, lat REAL, lng REAL, connector_type TEXT, power_kw INTEGER, total_bays INTEGER, available_bays INTEGER, owner_id INTEGER, current_load REAL DEFAULT 0.0, price_per_kwh REAL DEFAULT 18.5)')
+    conn.execute('CREATE TABLE IF NOT EXISTS charging_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, vehicle_id INTEGER, station_id INTEGER, energy_kwh REAL, cost REAL, carbon_saved REAL, credits_earned REAL, start_time TEXT, end_time TEXT)')
     conn.execute('CREATE TABLE IF NOT EXISTS favorites (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, station_id INTEGER)')
     conn.execute('CREATE TABLE IF NOT EXISTS security_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, ip_address TEXT, device_agent TEXT, status TEXT)')
     conn.execute('CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, message TEXT, is_read INTEGER DEFAULT 0)')
+    conn.execute('CREATE TABLE IF NOT EXISTS carbon_ledger (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, amount REAL, source TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)')
+    conn.execute('CREATE TABLE IF NOT EXISTS grid_forecast (id INTEGER PRIMARY KEY AUTOINCREMENT, hour INTEGER, load_factor REAL, price_multiplier REAL)')
+    
+    # Seed Grid Forecast if empty
+    if not conn.execute('SELECT id FROM grid_forecast LIMIT 1').fetchone():
+        forecasts = [(h, 0.5 + 0.4 * math.sin(h/4), 1.0 + 0.5 * math.cos(h/6)) for h in range(24)]
+        conn.executemany('INSERT INTO grid_forecast (hour, load_factor, price_multiplier) VALUES (?,?,?)', forecasts)
     
     # Ensure Admin
     cursor = conn.cursor()
@@ -775,8 +820,81 @@ def premium_cancel():
     conn.commit(); conn.close()
     return jsonify({'success': True})
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+# ── NEXT-LEVEL FEATURES: OCPP, PREDICTIVE GRID, CARBON ECONOMY ────────
+
+@app.route('/api/grid/pricing', methods=['GET'])
+def get_grid_pricing():
+    price = VahanIntelligence.get_predictive_pricing()
+    hour = datetime.now().hour
+    conn = get_db_connection()
+    forecasts = conn.execute('SELECT * FROM grid_forecast WHERE hour >= ? LIMIT 6', (hour,)).fetchall()
+    conn.close()
+    return jsonify({
+        'current_price': price,
+        'unit': 'INR/kWh',
+        'forecast': [dict(f) for f in forecasts],
+        'grid_status': 'Optimized' if price < 22 else 'Peak Load'
+    })
+
+@app.route('/api/telemetry/obd/<int:vehicle_id>', methods=['GET'])
+@login_required
+def get_obd_telemetry(vehicle_id):
+    # Simulated real-time hardware telemetry
+    conn = get_db_connection()
+    v = conn.execute('SELECT * FROM fleet_vehicles WHERE id = ?', (vehicle_id,)).fetchone()
+    conn.close()
+    if not v: return jsonify({'error': 'Vehicle not found'}), 404
+    
+    # Add noise to simulate live hardware reading
+    temp = v['battery_temp'] + random.uniform(-0.5, 0.5)
+    voltage = v['cell_voltage'] + random.uniform(-0.02, 0.02)
+    
+    return jsonify({
+        'vehicle_id': vehicle_id,
+        'vin_verified': True,
+        'obd_status': 'Connected',
+        'telemetry': {
+            'battery_temp': round(temp, 1),
+            'cell_voltage': round(voltage, 2),
+            'cycle_count': random.randint(120, 450),
+            'health_score': 94.2,
+            'v2g_ready': True if v['battery_pct'] > 50 else False
+        },
+        'timestamp': datetime.now().isoformat()
+    })
+
+@app.route('/api/credits/ledger', methods=['GET'])
+@login_required
+def get_carbon_ledger():
+    conn = get_db_connection()
+    user = conn.execute('SELECT carbon_credits FROM users WHERE id = ?', (current_user.id,)).fetchone()
+    ledger = conn.execute('SELECT * FROM carbon_ledger WHERE user_id = ? ORDER BY timestamp DESC', (current_user.id,)).fetchall()
+    conn.close()
+    return jsonify({
+        'total_balance': user['carbon_credits'] if user else 0,
+        'history': [dict(l) for l in ledger],
+        'impact_metrics': {
+            'trees_planted_equiv': round(user['carbon_credits'] / 10, 1) if user else 0,
+            'co2_offset_kg': round(user['carbon_credits'] * 2.5, 1) if user else 0
+        }
+    })
+
+@app.route('/api/v2g/revenue', methods=['GET'])
+@login_required
+def get_v2g_revenue():
+    # Predictive revenue from selling power back to the grid
+    price = VahanIntelligence.get_predictive_pricing()
+    revenue_potential = 0
+    if price > 25: # Only profitable during peak
+        revenue_potential = round(random.uniform(50, 150), 2)
+    
+    return jsonify({
+        'is_peak_window': price > 25,
+        'current_grid_buyback_rate': round(price * 0.8, 2),
+        'estimated_hourly_revenue': revenue_potential if price > 25 else 0,
+        'recommendation': 'Sell Power Now' if price > 25 else 'Wait for Peak'
+    })
+
 if __name__ == '__main__':
     init_db()
     port = int(os.getenv('PORT', 5000))

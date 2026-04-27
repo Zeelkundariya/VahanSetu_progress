@@ -4,7 +4,8 @@ import Navbar from '../components/Navbar';
 import { 
   Truck, ShieldCheck, BatteryCharging, CreditCard, Zap, 
   PlusCircle, Search, RefreshCcw, Car, Calendar, 
-  Edit3, Trash2, Bot, ShieldAlert, X, Sparkles, MapPin
+  Edit3, Trash2, Bot, ShieldAlert, X, Sparkles, MapPin, 
+  Thermometer, Activity, TrendingUp, DollarSign, BatteryCharging as V2GIcon
 } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
@@ -50,12 +51,33 @@ export default function FleetPage() {
   const [lookupData, setLookupData] = useState(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [sortBy, setSortBy] = useState('default');
+  const [telemetry, setTelemetry] = useState({});
+  const [v2gData, setV2GData] = useState({ estimated_hourly_revenue: 0 });
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(pushRandomIncident, 5000);
+    fetchV2G();
+    const interval = setInterval(() => {
+      fetchV2G();
+      // Poll telemetry for first 4 assets
+      vehicles.slice(0, 4).forEach(v => fetchTelemetry(v.id));
+    }, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [vehicles.length]);
+
+  const fetchV2G = async () => {
+    try {
+      const { data } = await api.get('/api/v2g/revenue');
+      setV2GData(data);
+    } catch {}
+  };
+
+  const fetchTelemetry = async (vid) => {
+    try {
+      const { data } = await api.get(`/api/telemetry/obd/${vid}`);
+      setTelemetry(prev => ({ ...prev, [vid]: data }));
+    } catch {}
+  };
 
   useEffect(() => {
      if (window.vsAnimate) window.vsAnimate.refreshTilt();
@@ -296,12 +318,12 @@ export default function FleetPage() {
                         <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>{v.status === 'active' ? '14:30' : '--:--'}</div>
                       </div>
                       <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '8px 10px' }}>
-                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>Telemetry</div>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cyan)' }}>Live</div>
+                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>OBD-II Link</div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cyan)' }}>{telemetry[v.id] ? 'STREAMING' : 'READY'}</div>
                       </div>
                       <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '8px 10px' }}>
-                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>Position</div>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>Tactical</div>
+                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>Batt Temp</div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: (telemetry[v.id]?.telemetry.battery_temp > 35) ? 'var(--red)' : 'var(--green)' }}>{telemetry[v.id]?.telemetry.battery_temp || '--'}°C</div>
                       </div>
                     </div>
                     
@@ -349,6 +371,29 @@ export default function FleetPage() {
                   {isAiLoading ? 'Analyzing Grid...' : <><Zap size={14} /> Auto-Schedule Fleet</>}
                 </button>
                 {aiResult && <div style={{ marginTop: 16, padding: 12, borderRadius: 12, background: 'rgba(0,0,0,0.3)', fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--cyan)', whiteSpace: 'pre-wrap' }}>{aiResult}</div>}
+              </div>
+
+              <div className="vs-glass" style={{ padding: 24, borderRadius: 20, background: 'linear-gradient(135deg, rgba(0,240,255,0.05), transparent)', border: '1px solid rgba(0,240,255,0.2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div className="vs-section-title vs-icon-text" style={{ margin: 0 }}><V2GIcon size={20} color="var(--green)" /> V2G Optimization</div>
+                  <span className="vs-badge-live" style={{ background: v2gData.is_peak_window ? 'var(--red)' : 'var(--green)' }}>
+                    {v2gData.is_peak_window ? 'PEAK LOAD' : 'GRID SYNCED'}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 15, borderRadius: 16 }}>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: 5 }}>GRID BUYBACK</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 900 }}>₹{v2gData.current_grid_buyback_rate || 14.5}</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 15, borderRadius: 16 }}>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: 5 }}>REVENUE POTENTIAL</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--green)' }}>₹{v2gData.estimated_hourly_revenue || 0}/hr</div>
+                  </div>
+                </div>
+                <div style={{ padding: '12px 16px', background: 'rgba(0,255,163,0.08)', borderRadius: 12, fontSize: '0.8rem', color: '#fff', border: '1px dashed var(--green)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                   <TrendingUp size={16} color="var(--green)"/>
+                   <strong>AI Insight:</strong> {v2gData.recommendation || 'Analyzing grid patterns...'}
+                </div>
               </div>
 
               <div className="vs-glass" style={{ padding: 24, borderRadius: 20 }}>

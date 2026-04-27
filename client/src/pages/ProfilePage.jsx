@@ -23,7 +23,8 @@ export default function ProfilePage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
-  const [editName, setEditName] = useState('');
+   const [editName, setEditName] = useState('');
+   const [credits, setCredits] = useState({ total_balance: 0, history: [], impact_metrics: {} });
 
   useEffect(() => {
     fetchData();
@@ -32,14 +33,22 @@ export default function ProfilePage() {
   const fetchData = async () => {
     try {
       const res = await api.get('/api/profile_data');
-      setData(res.data);
-      setEditName(user?.name || '');
+       setData(res.data);
+       setEditName(user?.name || '');
+       fetchCredits();
     } catch (e) {
       console.error("Profile sync failed", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+     } finally {
+       setLoading(false);
+     }
+   };
+ 
+   const fetchCredits = async () => {
+     try {
+       const { data } = await api.get('/api/credits/ledger');
+       setCredits(data);
+     } catch {}
+   };
 
   if (loading && !data) return (
     <div className="vs-loading-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-deep)' }}>
@@ -139,20 +148,27 @@ export default function ProfilePage() {
                     </div>
                  </div>
 
-                 {/* ECO IMPACT */}
-                 <div className="vs-glass" style={{ marginTop: 24, padding: 20, borderRadius: 20, background: 'linear-gradient(135deg, rgba(0,255,135,0.05), transparent)', borderColor: 'rgba(0,255,135,0.2)', textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                       <Leaf size={14} /> Ecological Impact
+                 {/* CARBON CREDIT ECONOMY (Next-Level Feature) */}
+                 <div className="vs-glass" style={{ marginTop: 24, padding: 20, borderRadius: 20, background: 'linear-gradient(135deg, rgba(0,255,163,0.1), transparent)', borderColor: 'rgba(0,255,163,0.3)', textAlign: 'left' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                       <Zap size={14} /> VahanCredits Ledger
                     </div>
-                    <div style={{ display: 'flex', gap: 16 }}>
-                       <div style={{ flex: 1 }}>
-                          <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)' }}>{(stats.total_kwh * 0.4 || 0).toFixed(1)}</div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginTop: 2 }}>kg CO2 Offset</div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, marginBottom: 15 }}>
+                       <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.4rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{credits.total_balance}</div>
+                       <div style={{ fontSize: '0.7rem', color: 'var(--green)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Liquid Credits</div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                       <div style={{ background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 14 }}>
+                          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--green)' }}>{credits.impact_metrics?.trees_planted_equiv || 0}</div>
+                          <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Trees Equiv.</div>
                        </div>
-                       <div style={{ flex: 1 }}>
-                          <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)' }}>{(stats.total_kwh * 0.02 || 0).toFixed(1)}</div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginTop: 2 }}>Trees Saved</div>
+                       <div style={{ background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 14 }}>
+                          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--green)' }}>{credits.impact_metrics?.co2_offset_kg || 0}kg</div>
+                          <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>CO2 Offset</div>
                        </div>
+                    </div>
+                    <div style={{ marginTop: 15, fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 10 }}>
+                       Every 10 kWh earns 1 Carbon Credit
                     </div>
                  </div>
 
@@ -306,6 +322,39 @@ export default function ProfilePage() {
                         )}
                      </tbody>
                   </table>
+               </div>
+
+               {/* Carbon Economy Ledger */}
+               <div className="vs-glass" style={{ padding: 32, borderRadius: 24 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 28 }}>
+                     <div>
+                        <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 10, color: 'var(--green)' }}>
+                           <Leaf size={18} /> Carbon Credit Verification Ledger
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Blockchain-ready verified earnings for green mobility.</div>
+                     </div>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                  <table className="vs-table">
+                     <thead>
+                        <tr><th>Transaction ID</th><th>Earning Event</th><th>Impact Factor</th><th>Credit Amount</th></tr>
+                     </thead>
+                     <tbody>
+                        {credits.history.length === 0 ? (
+                           <tr><td colSpan="4" style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>Initial Credits seeding in progress...</td></tr>
+                        ) : (
+                           credits.history.map((h, i) => (
+                              <tr key={i}>
+                                 <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>#{h.id.toString().padStart(6, '0')}</td>
+                                 <td style={{ fontWeight: 700 }}>{h.source}</td>
+                                 <td style={{ color: 'var(--green)' }}>Verified Green</td>
+                                 <td style={{ fontWeight: 900, color: 'var(--green)' }}>+{h.amount} VS</td>
+                              </tr>
+                           ))
+                        )}
+                     </tbody>
+                  </table>
+                  </div>
                </div>
 
                {/* Transaction History */}

@@ -124,6 +124,8 @@ export default function MapPage() {
   const [highlightedId, setHighlightedId] = useState(null);
   const [hint, setHint] = useState(null);
   const [tripStats, setTripStats] = useState(null);
+  const [gridPricing, setGridPricing] = useState({ current_price: 18.5, grid_status: 'Optimized' });
+  const [credits, setCredits] = useState({ total_balance: 0 });
 
   const loc = useLocation();
   const mapRef = useRef();
@@ -159,14 +161,31 @@ export default function MapPage() {
     };
 
     startLocating();
+    fetchGridIntel();
+    fetchCredits();
     
-    // Check for URL-driven refocusing
-    const params = new URLSearchParams(loc.search);
-    if (params.get('lat') && params.get('lng')) {
-      const pos = [parseFloat(params.get('lat')), parseFloat(params.get('lng'))];
-      setTimeout(() => mapRef.current?.flyTo(pos, 16), 500);
-    }
+    // Pulse every 30s for OCPP-like updates
+    const pulse = setInterval(() => {
+      fetchStations();
+      fetchGridIntel();
+    }, 30000);
+
+    return () => clearInterval(pulse);
   }, [loc.search]);
+
+  const fetchGridIntel = async () => {
+    try {
+      const { data } = await api.get('/api/grid/pricing');
+      setGridPricing(data);
+    } catch {}
+  };
+
+  const fetchCredits = async () => {
+    try {
+      const { data } = await api.get('/api/credits/ledger');
+      setCredits(data);
+    } catch {}
+  };
   
 
   const handleAutoLocate = () => {
@@ -328,6 +347,19 @@ export default function MapPage() {
   return (
     <div className="app map-mode" style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
+      <div id="grid-status-bar" style={{ background: gridPricing.grid_status === 'Peak Load' ? 'rgba(255,61,107,0.1)' : 'rgba(0,240,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '8px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="vs-pulse-dot" style={{ background: gridPricing.grid_status === 'Peak Load' ? 'var(--red)' : 'var(--cyan)' }}></div>
+          <span style={{ fontWeight: 800, color: gridPricing.grid_status === 'Peak Load' ? 'var(--red)' : 'var(--cyan)' }}>GRID: {gridPricing.grid_status}</span>
+          <span style={{ color: 'var(--text-muted)' }}>| Current Rate: <strong style={{ color: '#fff' }}>₹{gridPricing.current_price}/{gridPricing.unit}</strong></span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,255,163,0.1)', padding: '4px 10px', borderRadius: 20 }}>
+            <Zap size={12} color="var(--green)"/>
+            <span style={{ color: 'var(--green)', fontWeight: 800 }}>{credits.total_balance} VahanCredits</span>
+          </div>
+        </div>
+      </div>
       <div className="app-body" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <div className="map-wrap">
           <MapContainer center={[23.0225, 72.5714]} zoom={12} zoomControl={false} style={{ width: '100%', height: '100%' }}
@@ -545,12 +577,14 @@ export default function MapPage() {
                   <div className="s-card-addr">{s.address}</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <div className="s-card-avail" style={{ margin: 0 }}>
-                      <div className={`s-dot ${(s.available_bays || 0) > 0 ? 'green' : 'red'}`} />
+                      <div className={`vs-pulse-dot ${(s.available_bays || 0) > 0 ? 'green' : 'red'}`} style={{ width: 8, height: 8 }} />
                       <strong style={{ fontSize: '0.85rem' }}>{s.available_bays || 0}/{s.total_bays || 0} Bays</strong>
+                      <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginLeft: 8 }}>OCPP LIVE</span>
                     </div>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--cyan)', border: '1px solid var(--cyan-border)', padding: '3px 10px', borderRadius: '20px' }}>
-                      {s.distance_km ? `${s.distance_km.toFixed(2)} km away` : 'Nearby'}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 900, color: gridPricing.grid_status === 'Peak Load' ? 'var(--red)' : 'var(--green)' }}>₹{s.price_per_kwh || gridPricing.current_price}</span>
+                      <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>PREDICTIVE RATE</span>
+                    </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 15 }}>
                     <button className="s-action" onClick={(e) => { e.stopPropagation(); setTrip({start:'My Location', end:s.address}); planTrip(); }}><Navigation2 size={16} color="var(--cyan)" /> <span style={{fontSize:'0.55rem'}}>Maps</span></button>
