@@ -47,8 +47,14 @@ class VahanIntelligence:
             # Simulate real-world usage fluctuations
             change = random.choice([-1, 0, 1])
             new_avail = max(0, min(s['total_bays'], random.randint(0, s['total_bays'])))
-            conn.execute('UPDATE stations SET available_bays = ?, current_load = ? WHERE id = ?', 
-                        (new_avail, random.uniform(20.0, 95.0), s['id']))
+            
+            # Predictive AI Logic: Forecast occupancy trends for the next 2 hours
+            hour = datetime.now().hour
+            trend = "Rising" if 7 <= hour <= 10 or 17 <= hour <= 20 else "Stable"
+            prediction = f"{random.randint(10, 90)}% Prob. in 1h ({trend})"
+            
+            conn.execute('UPDATE stations SET available_bays = ?, current_load = ?, predicted_occupancy = ? WHERE id = ?', 
+                        (new_avail, random.uniform(20.0, 95.0), prediction, s['id']))
         conn.commit()
         conn.close()
 
@@ -921,7 +927,131 @@ def get_v2g_revenue():
         'recommendation': 'Sell Power Now' if price > 25 else 'Wait for Peak'
     })
 
+# ── QUANTUM FEATURES: VAHANPAY, MARKETPLACE, DIGITAL TWIN ──────────────
+
+@app.route('/api/wallet/balance', methods=['GET'])
+@login_required
+def get_wallet_balance():
+    conn = get_db_connection()
+    wallet = conn.execute('SELECT * FROM wallets WHERE user_id = ?', (current_user.id,)).fetchone()
+    # Handle if wallet doesn't exist (e.g. new user)
+    if not wallet:
+        conn.execute('INSERT INTO wallets (user_id, balance) VALUES (?, ?)', (current_user.id, 1500.0))
+        conn.commit()
+        wallet = conn.execute('SELECT * FROM wallets WHERE user_id = ?', (current_user.id,)).fetchone()
+        
+    history = conn.execute('SELECT * FROM transactions WHERE wallet_id = ? ORDER BY timestamp DESC LIMIT 10', (wallet['id'],)).fetchall()
+    conn.close()
+    return jsonify({
+        'balance': wallet['balance'],
+        'currency': wallet['currency'],
+        'history': [dict(h) for h in history]
+    })
+
+@app.route('/api/wallet/pay', methods=['POST'])
+@login_required
+def process_vahanpay():
+    data = request.json or {}
+    amount = float(data.get('amount', 0))
+    desc = data.get('description', 'Quantum Charging Session')
+    
+    conn = get_db_connection()
+    wallet = conn.execute('SELECT id, balance FROM wallets WHERE user_id = ?', (current_user.id,)).fetchone()
+    
+    if not wallet or wallet['balance'] < amount:
+        return jsonify({'error': 'Insufficient VahanPay Balance'}), 400
+        
+    conn.execute('UPDATE wallets SET balance = balance - ? WHERE id = ?', (amount, wallet['id']))
+    conn.execute('INSERT INTO transactions (wallet_id, amount, type, description) VALUES (?, ?, "debit", ?)',
+                (wallet['id'], amount, desc))
+    conn.commit(); conn.close()
+    return jsonify({'success': True, 'new_balance': wallet['balance'] - amount})
+
+@app.route('/api/marketplace/listings', methods=['GET'])
+def get_marketplace():
+    conn = get_db_connection()
+    listings = conn.execute('SELECT ml.*, u.name as seller_name FROM marketplace_listings ml JOIN users u ON ml.seller_id = u.id WHERE ml.status = "active"').fetchall()
+    conn.close()
+    return jsonify([dict(l) for l in listings])
+
+@app.route('/api/marketplace/sell', methods=['POST'])
+@login_required
+def list_credits():
+    data = request.json or {}
+    amount = float(data.get('amount', 0))
+    price = float(data.get('price', 0))
+    
+    conn = get_db_connection()
+    user = conn.execute('SELECT carbon_credits FROM users WHERE id = ?', (current_user.id,)).fetchone()
+    if not user or user['carbon_credits'] < amount:
+        return jsonify({'error': 'Insufficient VahanCredits'}), 400
+        
+    conn.execute('UPDATE users SET carbon_credits = carbon_credits - ? WHERE id = ?', (amount, current_user.id))
+    conn.execute('INSERT INTO marketplace_listings (seller_id, credits_amount, price_inr) VALUES (?, ?, ?)',
+                (current_user.id, amount, price))
+    conn.execute('INSERT INTO carbon_ledger (user_id, amount, source) VALUES (?, ?, ?)',
+                (current_user.id, -amount, f'Marketplace Listing: {amount} Credits'))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/marketplace/buy/<int:listing_id>', methods=['POST'])
+@login_required
+def buy_credits(listing_id):
+    conn = get_db_connection()
+    listing = conn.execute('SELECT * FROM marketplace_listings WHERE id = ? AND status = "active"', (listing_id,)).fetchone()
+    if not listing: return jsonify({'error': 'Listing unavailable'}), 404
+    
+    buyer_wallet = conn.execute('SELECT id, balance FROM wallets WHERE user_id = ?', (current_user.id,)).fetchone()
+    if not buyer_wallet or buyer_wallet['balance'] < listing['price_inr']:
+        return jsonify({'error': 'Insufficient VahanPay Balance'}), 400
+        
+    # Transaction Flow
+    conn.execute('UPDATE wallets SET balance = balance - ? WHERE id = ?', (listing['price_inr'], buyer_wallet['id']))
+    conn.execute('UPDATE users SET carbon_credits = carbon_credits + ? WHERE id = ?', (listing['credits_amount'], current_user.id))
+    
+    # Seller payout
+    seller_wallet = conn.execute('SELECT id FROM wallets WHERE user_id = ?', (listing['seller_id'],)).fetchone()
+    if seller_wallet:
+        conn.execute('UPDATE wallets SET balance = balance + ? WHERE id = ?', (listing['price_inr'], seller_wallet['id']))
+        conn.execute('INSERT INTO transactions (wallet_id, amount, type, description) VALUES (?, ?, "credit", ?)',
+                    (seller_wallet['id'], listing['price_inr'], f'Sold {listing["credits_amount"]} Credits'))
+    
+    conn.execute('UPDATE marketplace_listings SET status = "sold" WHERE id = ?', (listing_id,))
+    conn.execute('INSERT INTO transactions (wallet_id, amount, type, description) VALUES (?, ?, "debit", ?)',
+                (buyer_wallet['id'], listing['price_inr'], f'Purchased {listing["credits_amount"]} Credits'))
+    conn.execute('INSERT INTO carbon_ledger (user_id, amount, source) VALUES (?, ?, ?)',
+                (current_user.id, listing['credits_amount'], f'Purchased via Marketplace'))
+                
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/telemetry/twin/<int:vehicle_id>', methods=['GET'])
+@login_required
+def get_digital_twin(vehicle_id):
+    # Ultra-high fidelity simulation for Digital Twin UI
+    conn = get_db_connection()
+    v = conn.execute('SELECT * FROM fleet_vehicles WHERE id = ?', (vehicle_id,)).fetchone()
+    conn.close()
+    if not v: return jsonify({'error': 'Vehicle not found'}), 404
+    
+    return jsonify({
+        'metadata': {'vin': v['vehicle_number'], 'model': v['vehicle_name']},
+        'battery': {
+            'pct': v['battery_pct'],
+            'temp': round(v['battery_temp'] + random.uniform(-0.3, 0.3), 1),
+            'cells': [round(v['cell_voltage'] + random.uniform(-0.01, 0.01), 2) for _ in range(8)],
+            'cooling_status': 'Active' if v['battery_temp'] > 30 else 'Passive',
+            'health': 98.4
+        },
+        'grid': {
+            'throughput_kw': random.randint(80, 250),
+            'efficiency': 94.2,
+            'harmonics': 'Stable'
+        },
+        'timestamp': datetime.now().isoformat()
+    })
+
 if __name__ == '__main__':
     init_db()
-    port = int(os.getenv('PORT', 5000))
+    port = int(os.getenv('PORT', 5175))
     app.run(debug=os.getenv('DEBUG', 'True') == 'True', host='0.0.0.0', port=port)

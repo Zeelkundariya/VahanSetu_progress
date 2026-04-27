@@ -545,7 +545,7 @@ export default function MapPage() {
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 900, color: gridPricing.grid_status === 'Peak Load' ? 'var(--red)' : 'var(--green)' }}>₹{s.price_per_kwh || gridPricing.current_price}</span>
-                          <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>PREDICTIVE RATE</span>
+                          <span style={{ fontSize: '0.55rem', color: 'var(--cyan)', fontWeight: 800 }}>{s.predicted_occupancy || 'PREDICTING...'}</span>
                         </div>
                       </div>
 

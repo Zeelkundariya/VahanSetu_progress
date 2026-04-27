@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, showToast } from '../api';
 import Navbar from '../components/Navbar';
+import DigitalTwin from '../components/DigitalTwin';
 import { 
   Truck, ShieldCheck, CreditCard, Zap, 
   PlusCircle, Search, RefreshCcw, Car, Calendar, 
@@ -37,6 +38,7 @@ export default function FleetPage() {
   const [vehicles, setVehicles] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTwinId, setSelectedTwinId] = useState(null);
   const [aiResult, setAiResult] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -331,7 +333,9 @@ export default function FleetPage() {
                       <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }}><Calendar size={14} /></button>
                       <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }} onClick={() => window.location.href=`/map?lat=${v.lat}&lng=${v.lng}&asset=true`}><MapPin size={14} /></button>
                       <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }}><Edit3 size={14} /></button>
-                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--red)' }}><Trash2 size={14} /></button>
+                      <button className="vs-btn-icon" title="Digital Twin Live Stream" onClick={() => setSelectedTwinId(v.id)} style={{ width: 32, height: 32, background: 'rgba(0,240,255,0.1)', border: '1px solid rgba(0,240,255,0.2)', color: 'var(--cyan)' }}>
+                          <Cpu size={16} />
+                       </button>
                     </div>
                   </div>
                 )})}
@@ -421,6 +425,7 @@ export default function FleetPage() {
             </div>
           </div>
         </div>
+        {selectedTwinId && <DigitalTwin vehicleId={selectedTwinId} onClose={() => setSelectedTwinId(null)} />}
       </div>
 
       {showAddModal && (
