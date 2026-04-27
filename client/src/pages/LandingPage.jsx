@@ -108,6 +108,17 @@ export default function LandingPage() {
             plan AI-optimized routes, manage your fleet, and monitor live availability —
             all in one cinematic platform.
           </p>
+          
+          <div className="vs-grid-hud" style={{ position: 'absolute', top: 0, left: 0, right: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, background: 'rgba(0,240,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div className="vs-pulse-dot" style={{ background: 'var(--cyan)' }}></div>
+              <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Grid Intel: Active</span>
+            </div>
+            <div style={{ display: 'flex', gap: 16, fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+               <span>RATE: <span style={{ color: '#fff' }}>₹12.40/kWh</span></span>
+               <span>LOAD: <span style={{ color: 'var(--green)' }}>34% (Optimized)</span></span>
+            </div>
+          </div>
 
           <div className="hero-cta">
             <Link to="/map" className="vs-btn vs-btn-primary vs-icon-text" style={{ padding: '15px 32px', fontSize: '1rem', borderRadius: 14 }}>
@@ -188,20 +199,20 @@ export default function LandingPage() {
       {/* ── STATS BAR ── */}
       <div className="stats-bar">
         <div className="stat-item">
-          <div className="num"><CountUp value={500} suffix="+" /></div>
-          <div className="stat-label">Charging Stations</div>
+          <div className="num"><CountUp value={582} suffix="+" /></div>
+          <div className="stat-label">OCPP Linked Nodes</div>
         </div>
         <div className="stat-item">
-          <div className="num"><CountUp value={12} suffix="k+" /></div>
-          <div className="stat-label">Active Users</div>
+          <div className="num"><CountUp value={14.8} suffix="k" /></div>
+          <div className="stat-label">Active VS ID Profiles</div>
         </div>
         <div className="stat-item">
-          <div className="num"><CountUp value={99} suffix="%" /></div>
-          <div className="stat-label">Network Uptime</div>
+          <div className="num"><CountUp value={840} suffix="+" /></div>
+          <div className="stat-label">Trees Saved Equiv.</div>
         </div>
         <div className="stat-item">
-          <div className="num"><CountUp value={2.8} suffix="M kWh" /></div>
-          <div className="stat-label">Energy Delivered</div>
+          <div className="num"><CountUp value={42.5} suffix="t" /></div>
+          <div className="stat-label">CO2 Offset Pulse</div>
         </div>
       </div>
 

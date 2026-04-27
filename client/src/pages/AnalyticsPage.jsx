@@ -121,6 +121,18 @@ export default function AnalyticsPage() {
     }]
   };
 
+  const carbonChartData = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [{
+      label: 'CO2 Offset (kg)',
+      data: [1200, 1900, 3100, 4800, 7200, 9500],
+      borderColor: '#00ffa3',
+      backgroundColor: 'rgba(0,255,163,0.1)',
+      fill: true,
+      tension: 0.4
+    }]
+  };
+
   return (
     <div className="app">
       <Navbar />
@@ -204,6 +216,34 @@ export default function AnalyticsPage() {
                 <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--purple)', padding: '4px 10px', border: '1px solid var(--purple-dim)', borderRadius: 6, textTransform: 'uppercase' }}>₹ / Day</span>
               </div>
               <div style={{ height: 300 }}><Line data={revenueChartData} options={chartOptions} /></div>
+            </div>
+          </div>
+
+          {/* NEXT-LEVEL: CARBON & GRID INTELLIGENCE */}
+          <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: 24, marginBottom: 32 }}>
+            <div className="credits-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 24 }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div className="vs-badge-live" style={{ background: 'rgba(0,255,163,0.1)', color: 'var(--green)' }}>
+                     <ShieldCheck size={12} /> Carbon Ledger Active
+                  </div>
+               </div>
+               <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>VahanCredits<br/><span style={{ color: 'var(--green)' }}>Economy</span></h2>
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                  <div className="impact-metric">
+                     <span className="impact-val">42.5k</span>
+                     <span className="impact-label">Total Credits</span>
+                  </div>
+                  <div className="impact-metric">
+                     <span className="impact-val">840+</span>
+                     <span className="impact-label">Trees Saved</span>
+                  </div>
+               </div>
+            </div>
+            <div className="vs-glass" style={{ padding: 32, borderRadius: 20, borderTop: '4px solid var(--green)' }}>
+               <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '1rem', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <TrendingUp size={18} color="var(--green)" /> Cumulative CO2 Offset Path (Net Zero Pulse)
+               </div>
+               <div style={{ height: 200 }}><Line data={carbonChartData} options={chartOptions} /></div>
             </div>
           </div>
 

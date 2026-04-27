@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { api, showToast } from '../api';
 import Navbar from '../components/Navbar';
 import { 
-  Truck, ShieldCheck, BatteryCharging, CreditCard, Zap, 
+  Truck, ShieldCheck, CreditCard, Zap, 
   PlusCircle, Search, RefreshCcw, Car, Calendar, 
   Edit3, Trash2, Bot, ShieldAlert, X, Sparkles, MapPin, 
-  Thermometer, Activity, TrendingUp, DollarSign, BatteryCharging as V2GIcon
+  Thermometer, Activity, TrendingUp, DollarSign, BatteryCharging, BatteryCharging as V2GIcon
 } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';

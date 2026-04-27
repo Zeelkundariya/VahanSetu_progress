@@ -204,7 +204,7 @@ def verify_jwt(token):
 @app.before_request
 def validate_session():
     # Allow public access to certain routes
-    public = ['/', '/login', '/signup', '/logout', '/api/me']
+    public = ['/', '/login', '/signup', '/logout', '/api/me', '/api/grid/pricing', '/api/stations']
     if request.path in public or request.path.startswith('/static/'):
         return
     
@@ -618,6 +618,26 @@ def api_analytics_filter():
     revenue = [random.randint(1000, 5000) for _ in range(n)]
     return jsonify({'labels': labels, 'energy': energy, 'revenue': revenue})
 
+@app.route('/api/credits/ledger')
+@login_required
+def api_credits_ledger():
+    # Simulated ledger based on user activity
+    return jsonify({
+        'total_credits': random.randint(1000, 2500),
+        'trees_saved': random.randint(12, 45),
+        'co2_kg': random.randint(300, 900),
+        'rank': 'Elite'
+    })
+
+@app.route('/api/v2g/revenue')
+@login_required
+def api_v2g_revenue():
+    return jsonify({
+        'estimated_hourly_revenue': round(random.uniform(15.5, 42.0), 2),
+        'active_grids': 4,
+        'grid_stability_contribution': '98.2%'
+    })
+
 @app.route('/api/notifications')
 @login_required
 def api_notifications():
@@ -795,7 +815,13 @@ def trip_plan():
             "total_km": total_km,
             "total_time": time_str,
             "instructions": instructions,
-            "stops": corridor_stations[:15] # Return top 15 strategic stops along the route
+            "stops": corridor_stations[:15],
+            "recommendation": {
+                "station": corridor_stations[0]['name'] if corridor_stations else "Solaris Hub North",
+                "reason": "Optimal 150kW throughput discovery along corridor path.",
+                "co2_saved": round(total_km * 0.15, 1),
+                "credits": int(total_km / 10)
+            }
         })
     except requests.exceptions.Timeout:
         return jsonify({"error": "Corridor Engine Timeout. Please try a shorter route or verify connectivity."}), 504

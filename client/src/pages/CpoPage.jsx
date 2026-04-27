@@ -97,6 +97,27 @@ export default function CpoPage() {
              </div>
           </div>
 
+          {/* NEXT-LEVEL: HOST GRID INTELLIGENCE */}
+          <div className="vs-glass" style={{ padding: 20, borderRadius: 20, marginBottom: 40, border: '1px dashed rgba(0,240,255,0.2)', background: 'rgba(0,240,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+               <div className="vs-badge-live" style={{ background: 'rgba(0,240,255,0.1)', color: 'var(--cyan)' }}>
+                  <TrendingUp size={12} /> Grid Feed: Active
+               </div>
+               <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>Predictive Grid Rate: <span style={{ color: 'var(--cyan)' }}>₹18.42/kWh</span></div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+               <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>V2G Buyback Potential</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--green)' }}>₹22.50/kWh Peak</div>
+               </div>
+               <div style={{ width: 1, height: 30, background: 'rgba(255,255,255,0.1)' }}></div>
+               <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Daily V2G Revenue</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--gold)' }}>₹1,450.00 Est.</div>
+               </div>
+            </div>
+          </div>
+
           <div className="main-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 36 }}>
             {/* Left: Station Cards */}
             <div>
@@ -125,7 +146,10 @@ export default function CpoPage() {
                         position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column',
                         background: 'var(--bg-glass)', backdropFilter: 'blur(30px)'
                       }}>
-                        <div style={{ position: 'absolute', top: 24, right: 24, background: 'rgba(0,255,135,0.1)', color: 'var(--green)', padding: '4px 10px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ONLINE</div>
+                        <div style={{ position: 'absolute', top: 24, right: 24, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                           <div className="vs-badge-live" style={{ background: 'rgba(0,255,135,0.1)', color: 'var(--green)', fontSize: '0.55rem' }}>ONLINE</div>
+                           <div style={{ fontSize: '0.5rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em' }}>OCPP PULSE: 2s ago</div>
+                        </div>
                         
                         <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '1.5rem', color: '#fff', marginBottom: 6, letterSpacing: '-0.5px' }}>{station.name}</div>
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24 }}>
