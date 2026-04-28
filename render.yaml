@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: vahansetu
+    env: python
+    buildCommand: ./build.sh
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.10.0
+    # Optional: If you want persistent SQLite, you'd add a disk here.
+    # disk:
+    #   name: vahan-db
+    #   mountPath: /data
+    #   sizeGB: 1

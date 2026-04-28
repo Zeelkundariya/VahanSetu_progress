@@ -7,11 +7,8 @@ import CpoPage from './pages/CpoPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ProfilePage from './pages/ProfilePage';
 import PremiumPage from './pages/PremiumPage';
-import EconomyPage from './pages/EconomyPage';
-import AdminPage from './pages/AdminPage';
 import Toast from './components/Toast';
 import Background from './components/Background';
-import VoiceAssistant from './components/VoiceAssistant';
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -36,8 +33,6 @@ function AppRoutes() {
       <Route path="/analytics" element={<Protected><AnalyticsPage /></Protected>} />
       <Route path="/profile"   element={<Protected><ProfilePage /></Protected>} />
       <Route path="/premium"   element={<Protected><PremiumPage /></Protected>} />
-      <Route path="/economy"   element={<Protected><EconomyPage /></Protected>} />
-      <Route path="/admin"     element={<Protected><AdminPage /></Protected>} />
       <Route path="*"          element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -49,7 +44,6 @@ export default function App() {
       <AuthProvider>
         <Background />
         <Toast />
-        <VoiceAssistant />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>

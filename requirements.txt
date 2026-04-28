@@ -4,3 +4,5 @@ flask-login
 werkzeug
 razorpay
 PyJWT
+gunicorn
+python-dotenv

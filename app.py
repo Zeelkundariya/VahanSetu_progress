@@ -10,10 +10,13 @@ from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from mailer import send_vahan_email
+from dotenv import load_dotenv
 import sqlite3
 import random
 import math
 import os
+
+load_dotenv()
 import requests
 import time
 import jwt
@@ -21,8 +24,8 @@ import concurrent.futures
 from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder='client/dist', static_url_path='/', template_folder='client/dist')
-app.config['JWT_SECRET'] = 'vahan-jwt-quantum-vault-2026'
-app.secret_key = 'vs-ultra-secure-key-2026'
+app.config['JWT_SECRET'] = os.getenv('JWT_SECRET', 'vahan-jwt-quantum-vault-2026')
+app.secret_key = os.getenv('SECRET_KEY', 'vs-ultra-secure-key-2026')
 CORS(app)
 
 # ── VAHAN INTELLIGENCE: SIMULATION & PREDICTION ENGINE ──────────────────

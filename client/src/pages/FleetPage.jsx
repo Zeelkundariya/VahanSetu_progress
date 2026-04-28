@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { api, showToast } from '../api';
 import Navbar from '../components/Navbar';
-import DigitalTwin from '../components/DigitalTwin';
 import { 
-  Truck, ShieldCheck, CreditCard, Zap, 
+  Truck, ShieldCheck, BatteryCharging, CreditCard, Zap, 
   PlusCircle, Search, RefreshCcw, Car, Calendar, 
-  Edit3, Trash2, Bot, ShieldAlert, X, Sparkles, MapPin, 
-  Thermometer, Activity, TrendingUp, DollarSign, BatteryCharging, BatteryCharging as V2GIcon
+  Edit3, Trash2, Bot, ShieldAlert, X, Sparkles, MapPin
 } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
@@ -38,7 +36,6 @@ export default function FleetPage() {
   const [vehicles, setVehicles] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTwinId, setSelectedTwinId] = useState(null);
   const [aiResult, setAiResult] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -53,33 +50,15 @@ export default function FleetPage() {
   const [lookupData, setLookupData] = useState(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [sortBy, setSortBy] = useState('default');
-  const [telemetry, setTelemetry] = useState({});
-  const [v2gData, setV2GData] = useState({ estimated_hourly_revenue: 0 });
+  const [editingVehicle, setEditingVehicle] = useState(null);
+  const [removeVehicleId, setRemoveVehicleId] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     fetchData();
-    fetchV2G();
-    const interval = setInterval(() => {
-      fetchV2G();
-      // Poll telemetry for first 4 assets
-      vehicles.slice(0, 4).forEach(v => fetchTelemetry(v.id));
-    }, 15000);
+    const interval = setInterval(pushRandomIncident, 5000);
     return () => clearInterval(interval);
-  }, [vehicles.length]);
-
-  const fetchV2G = async () => {
-    try {
-      const { data } = await api.get('/api/v2g/revenue');
-      setV2GData(data);
-    } catch {}
-  };
-
-  const fetchTelemetry = async (vid) => {
-    try {
-      const { data } = await api.get(`/api/telemetry/obd/${vid}`);
-      setTelemetry(prev => ({ ...prev, [vid]: data }));
-    } catch {}
-  };
+  }, []);
 
   useEffect(() => {
      if (window.vsAnimate) window.vsAnimate.refreshTilt();
@@ -95,6 +74,43 @@ export default function FleetPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRemoveVehicle = async (id) => {
+    if (!window.confirm('🛡️ SECURITY ALERT: Decommission this asset from the registry?')) return;
+    setRemoveVehicleId(id);
+    try {
+      const { data } = await api.delete(`/api/fleet/vehicle/${id}`);
+      if (data.success) {
+        showToast('Asset decommissioned', 'success');
+        fetchData();
+      }
+    } catch { showToast('Decommissioning failed', 'error'); }
+    finally { setRemoveVehicleId(null); }
+  };
+
+  const startEdit = (v) => {
+    setEditingVehicle({ ...v });
+  };
+
+  const handleUpdateVehicle = async () => {
+    setIsUpdating(true);
+    try {
+      const { data } = await api.patch(`/api/fleet/vehicle/${editingVehicle.id}`, {
+        vehicle_name: editingVehicle.vehicle_name,
+        vehicle_number: editingVehicle.vehicle_number
+      });
+      if (data.success) {
+        showToast('Asset metadata updated', 'success');
+        setEditingVehicle(null);
+        fetchData();
+      }
+    } catch { showToast('Update failed', 'error'); }
+    finally { setIsUpdating(false); }
+  };
+
+  const handleScheduleService = (v) => {
+    showToast(`Maintenance scheduled for ${v.vehicle_name}`, 'success');
   };
 
   const pushRandomIncident = () => {
@@ -320,22 +336,22 @@ export default function FleetPage() {
                         <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>{v.status === 'active' ? '14:30' : '--:--'}</div>
                       </div>
                       <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '8px 10px' }}>
-                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>OBD-II Link</div>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cyan)' }}>{telemetry[v.id] ? 'STREAMING' : 'READY'}</div>
+                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>Telemetry</div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cyan)' }}>Live</div>
                       </div>
                       <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '8px 10px' }}>
-                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>Batt Temp</div>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: (telemetry[v.id]?.telemetry.battery_temp > 35) ? 'var(--red)' : 'var(--green)' }}>{telemetry[v.id]?.telemetry.battery_temp || '--'}°C</div>
+                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 2 }}>Position</div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>Tactical</div>
                       </div>
                     </div>
                     
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }}><Calendar size={14} /></button>
-                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }} onClick={() => window.location.href=`/map?lat=${v.lat}&lng=${v.lng}&asset=true`}><MapPin size={14} /></button>
-                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }}><Edit3 size={14} /></button>
-                      <button className="vs-btn-icon" title="Digital Twin Live Stream" onClick={() => setSelectedTwinId(v.id)} style={{ width: 32, height: 32, background: 'rgba(0,240,255,0.1)', border: '1px solid rgba(0,240,255,0.2)', color: 'var(--cyan)' }}>
-                          <Cpu size={16} />
-                       </button>
+                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }} onClick={() => handleScheduleService(v)}><Calendar size={14} /></button>
+                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }} onClick={() => window.location.href=`/map?lat=${v.lat}&lng=${v.lng}&v_name=${v.vehicle_name}`}><MapPin size={14} /></button>
+                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }} onClick={() => startEdit(v)}><Edit3 size={14} /></button>
+                      <button className="v-act" style={{ flex: 1, padding: 8, fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--glass-border-2)', borderRadius: 9, background: 'rgba(255,255,255,0.04)', color: 'var(--red)' }} onClick={() => handleRemoveVehicle(v.id)} disabled={removeVehicleId === v.id}>
+                        {removeVehicleId === v.id ? '...' : <Trash2 size={14} />}
+                      </button>
                     </div>
                   </div>
                 )})}
@@ -377,29 +393,6 @@ export default function FleetPage() {
                 {aiResult && <div style={{ marginTop: 16, padding: 12, borderRadius: 12, background: 'rgba(0,0,0,0.3)', fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--cyan)', whiteSpace: 'pre-wrap' }}>{aiResult}</div>}
               </div>
 
-              <div className="vs-glass" style={{ padding: 24, borderRadius: 20, background: 'linear-gradient(135deg, rgba(0,240,255,0.05), transparent)', border: '1px solid rgba(0,240,255,0.2)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <div className="vs-section-title vs-icon-text" style={{ margin: 0 }}><V2GIcon size={20} color="var(--green)" /> V2G Optimization</div>
-                  <span className="vs-badge-live" style={{ background: v2gData.is_peak_window ? 'var(--red)' : 'var(--green)' }}>
-                    {v2gData.is_peak_window ? 'PEAK LOAD' : 'GRID SYNCED'}
-                  </span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 15, borderRadius: 16 }}>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: 5 }}>GRID BUYBACK</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 900 }}>₹{v2gData.current_grid_buyback_rate || 14.5}</div>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 15, borderRadius: 16 }}>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: 5 }}>REVENUE POTENTIAL</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--green)' }}>₹{v2gData.estimated_hourly_revenue || 0}/hr</div>
-                  </div>
-                </div>
-                <div style={{ padding: '12px 16px', background: 'rgba(0,255,163,0.08)', borderRadius: 12, fontSize: '0.8rem', color: '#fff', border: '1px dashed var(--green)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                   <TrendingUp size={16} color="var(--green)"/>
-                   <strong>AI Insight:</strong> {v2gData.recommendation || 'Analyzing grid patterns...'}
-                </div>
-              </div>
-
               <div className="vs-glass" style={{ padding: 24, borderRadius: 20 }}>
                 <div className="vs-section-title vs-icon-text" style={{ marginBottom: 20 }}><BatteryCharging size={16} /> Asset Distribution</div>
                 <div style={{ padding: 20, background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -425,7 +418,6 @@ export default function FleetPage() {
             </div>
           </div>
         </div>
-        {selectedTwinId && <DigitalTwin vehicleId={selectedTwinId} onClose={() => setSelectedTwinId(null)} />}
       </div>
 
       {showAddModal && (
@@ -465,6 +457,31 @@ export default function FleetPage() {
                  <button className="vs-btn" style={{ width: '100%', marginTop: 10, background: 'none' }} onClick={() => setLookupData(null)}>Different Plate</button>
                </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal (New) */}
+      {editingVehicle && (
+        <div className="vs-modal-overlay" onClick={() => setEditingVehicle(null)}>
+          <div className="vs-modal vs-glass" onClick={e => e.stopPropagation()} style={{ maxWidth: 440, padding: 32 }}>
+            <div className="vs-flex-between" style={{ marginBottom: 20 }}>
+              <h2 className="vs-modal-title" style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.4rem', fontWeight: 800 }}>Update Asset</h2>
+              <button className="vs-btn-icon" onClick={() => setEditingVehicle(null)}><X /></button>
+            </div>
+            
+            <div className="vs-float-group" style={{ marginBottom: 12 }}>
+              <input className="vs-float-input" required placeholder=" " value={editingVehicle.vehicle_name} onChange={e => setEditingVehicle({...editingVehicle, vehicle_name: e.target.value})} />
+              <label className="vs-float-label">Vehicle Name</label>
+            </div>
+            <div className="vs-float-group" style={{ marginBottom: 24 }}>
+              <input className="vs-float-input" required placeholder=" " value={editingVehicle.vehicle_number} onChange={e => setEditingVehicle({...editingVehicle, vehicle_number: e.target.value.toUpperCase()})} />
+              <label className="vs-float-label">License Plate</label>
+            </div>
+            
+            <button className="vs-btn vs-btn-primary" style={{ width: '100%' }} onClick={handleUpdateVehicle} disabled={isUpdating}>
+               {isUpdating ? 'Pulsing Data...' : 'Confirm Update'}
+            </button>
           </div>
         </div>
       )}

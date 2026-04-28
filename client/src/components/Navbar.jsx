@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Logo from './Logo';
 import { 
   MapPin, Truck, Zap, BarChart3, ShieldCheck, 
-  Diamond, User, LogOut, Menu, X, Shield, Star, Wallet
+  Diamond, User, LogOut, Menu, X, Shield, Star
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -31,7 +31,6 @@ export default function Navbar() {
     { path: '/map',       icon: <MapPin size={15} />, label: 'Map' },
     { path: '/fleet',     icon: <Truck size={15} />, label: 'Fleet' },
     { path: '/cpo',       icon: <Zap size={15} />,   label: 'Host Portal' },
-    { path: '/economy',   icon: <Wallet size={15} />, label: 'Economy' },
     { path: '/analytics', icon: <BarChart3 size={15} />, label: 'Analytics' },
   ];
 

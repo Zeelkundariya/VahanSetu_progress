@@ -4,7 +4,7 @@ import {
   ShieldCheck, Zap, Sparkles, Check, X, Rocket, Diamond, 
   MapPin, Clock, Shield, Cpu, Navigation2, Radio, BarChart2, ShieldOff, 
   CheckCircle, Headphones, Gift, Target, PieChart, HeadphonesIcon,
-  Car, Settings2, Lock, Activity
+  Activity, Car, Settings2, Lock
 } from 'lucide-react';
 import { api, showToast } from '../api';
 import { useAuth } from '../context/AuthContext';
