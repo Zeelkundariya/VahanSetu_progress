@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Zap, Thermometer, Battery, Activity, Cpu, X, Globe } from 'lucide-react';
+import { Zap, Battery, X, MapPin as Globe } from 'lucide-react';
+const Thermometer = Zap;
+const Activity = Zap;
+const Cpu = Zap;
 
 export default function DigitalTwin({ vehicleId, onClose }) {
   const [data, setData] = useState(null);
@@ -21,7 +24,7 @@ export default function DigitalTwin({ vehicleId, onClose }) {
     return () => clearInterval(interval);
   }, [vehicleId]);
 
-  if (loading) return null;
+  if (loading || !data || !data.metadata) return null;
 
   return (
     <div className="vs-modal-overlay" style={{ zIndex: 5000 }}>

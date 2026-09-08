@@ -7,9 +7,15 @@ import Navbar from '../components/Navbar';
 import { 
   Search, Mic, MapPin, Layers, Flag, Sidebar as SidebarIcon, 
   Cpu, Filter, Zap, CheckCircle, Navigation2, X, Star, RotateCcw, 
-  Flame, CheckSquare, Info, Bell, AlertTriangle, ArrowUpLeft, ArrowUpRight, AlertCircle
+  AlertCircle
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+
+const Flame = Zap;
+const CheckSquare = CheckCircle;
+const Info = Zap;
+const Bell = AlertCircle;
+const AlertTriangle = AlertCircle;
 
 // Fix Leaflet's default icon issue
 delete L.Icon.Default.prototype._getIconUrl;

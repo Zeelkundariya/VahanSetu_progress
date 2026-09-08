@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { 
-  ShieldCheck, Zap, Leaf, Settings2, Lock, Car, MapPin, 
-  ChevronRight, Activity, PieChart, Wallet, ShieldAlert, 
-  History, MessageSquare, Key, BatteryCharging, X, Star
+  Zap, Lock, Car, MapPin, 
+  ChevronRight, Activity, PieChart, 
+  History, Key, X, Star
 } from 'lucide-react';
 import { 
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, 
@@ -12,6 +12,14 @@ import {
 import { Line, Doughnut } from 'react-chartjs-2';
 import { api, showToast } from '../api';
 import { useAuth } from '../context/AuthContext';
+
+const ShieldCheck = Star;
+const Leaf = Star;
+const Settings2 = Zap;
+const Wallet = Zap;
+const ShieldAlert = Star;
+const MessageSquare = Zap;
+const BatteryCharging = Zap;
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, 

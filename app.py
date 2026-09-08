@@ -21,8 +21,8 @@ import concurrent.futures
 from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder='client/dist', static_url_path='/', template_folder='client/dist')
-app.config['JWT_SECRET'] = 'vahan-jwt-quantum-vault-2026'
-app.secret_key = 'vs-ultra-secure-key-2026'
+app.config['JWT_SECRET'] = os.environ.get('JWT_SECRET', 'vahan-jwt-quantum-vault-enterprise-security-2026')
+app.secret_key = os.environ.get('SECRET_KEY', 'vs-ultra-secure-key-enterprise-2026')
 CORS(app)
 
 # ── VAHAN INTELLIGENCE: SIMULATION & PREDICTION ENGINE ──────────────────
@@ -42,66 +42,97 @@ class VahanIntelligence:
     def simulate_ocpp_pulse():
         """Simulates real-time hardware pings that update station availability."""
         conn = get_db_connection()
-        stations = conn.execute('SELECT id, total_bays FROM stations').fetchall()
-        for s in stations:
-            # Simulate real-world usage fluctuations
-            change = random.choice([-1, 0, 1])
-            new_avail = max(0, min(s['total_bays'], random.randint(0, s['total_bays'])))
-            
-            # Predictive AI Logic: Forecast occupancy trends for the next 2 hours
-            hour = datetime.now().hour
-            trend = "Rising" if 7 <= hour <= 10 or 17 <= hour <= 20 else "Stable"
-            prediction = f"{random.randint(10, 90)}% Prob. in 1h ({trend})"
-            
-            conn.execute('UPDATE stations SET available_bays = ?, current_load = ?, predicted_occupancy = ? WHERE id = ?', 
-                        (new_avail, random.uniform(20.0, 95.0), prediction, s['id']))
-        conn.commit()
-        conn.close()
-
-# Start Simulation background thread
-def run_simulations():
-    while True:
         try:
-            VahanIntelligence.simulate_ocpp_pulse()
-            time.sleep(30) # Pulse every 30 seconds
+            stations = conn.execute('SELECT id, total_bays FROM stations').fetchall()
+            for s in stations:
+                change = random.choice([-1, 0, 1])
+                new_avail = max(0, min(s['total_bays'], random.randint(0, s['total_bays'])))
+                hour = datetime.now().hour
+                trend = "Rising" if 7 <= hour <= 10 or 17 <= hour <= 20 else "Stable"
+                prediction = f"{random.randint(10, 90)}% Prob. in 1h ({trend})"
+                conn.execute('UPDATE stations SET available_bays = ?, current_load = ?, predicted_occupancy = ? WHERE id = ?', 
+                            (new_avail, random.uniform(20.0, 95.0), prediction, s['id']))
+            conn.commit()
         except: pass
-
-import threading
-threading.Thread(target=run_simulations, daemon=True).start()
+        finally:
+            conn.close()
 
 # ---------- Initialization & Persistence ----------
 
 def get_db_connection():
     db_path = os.path.join(os.path.dirname(__file__), 'stations.db')
-    conn = sqlite3.connect(db_path, timeout=20)
+    conn = sqlite3.connect(db_path, timeout=30)
     conn.row_factory = sqlite3.Row
-    conn.execute('PRAGMA journal_mode=WAL')
     return conn
 
 def init_db():
     conn = get_db_connection()
+    try:
+        conn.execute('PRAGMA journal_mode=WAL')
+    except: pass
+
     conn.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT UNIQUE, password TEXT, role TEXT DEFAULT "user", is_premium INTEGER DEFAULT 0, carbon_credits REAL DEFAULT 0.0)')
     conn.execute('CREATE TABLE IF NOT EXISTS fleets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, fleet_name TEXT)')
     conn.execute('CREATE TABLE IF NOT EXISTS fleet_vehicles (id INTEGER PRIMARY KEY AUTOINCREMENT, fleet_id INTEGER, vehicle_name TEXT, vehicle_number TEXT, battery_pct INTEGER, range_km REAL, lat REAL, lng REAL, status TEXT, total_energy REAL, total_cost REAL, battery_temp REAL DEFAULT 25.0, cell_voltage REAL DEFAULT 3.7)')
-    conn.execute('CREATE TABLE IF NOT EXISTS stations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, address TEXT, lat REAL, lng REAL, connector_type TEXT, power_kw INTEGER, total_bays INTEGER, available_bays INTEGER, owner_id INTEGER, current_load REAL DEFAULT 0.0, price_per_kwh REAL DEFAULT 18.5)')
+    conn.execute('CREATE TABLE IF NOT EXISTS stations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, address TEXT, lat REAL, lng REAL, connector_type TEXT, power_kw INTEGER, total_bays INTEGER, available_bays INTEGER, owner_id INTEGER, current_load REAL DEFAULT 0.0, price_per_kwh REAL DEFAULT 18.5, predicted_occupancy TEXT)')
     conn.execute('CREATE TABLE IF NOT EXISTS charging_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, vehicle_id INTEGER, station_id INTEGER, energy_kwh REAL, cost REAL, carbon_saved REAL, credits_earned REAL, start_time TEXT, end_time TEXT)')
     conn.execute('CREATE TABLE IF NOT EXISTS favorites (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, station_id INTEGER)')
     conn.execute('CREATE TABLE IF NOT EXISTS security_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, ip_address TEXT, device_agent TEXT, status TEXT)')
     conn.execute('CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, message TEXT, is_read INTEGER DEFAULT 0)')
     conn.execute('CREATE TABLE IF NOT EXISTS carbon_ledger (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, amount REAL, source TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)')
     conn.execute('CREATE TABLE IF NOT EXISTS grid_forecast (id INTEGER PRIMARY KEY AUTOINCREMENT, hour INTEGER, load_factor REAL, price_multiplier REAL)')
-    
+    conn.execute('CREATE TABLE IF NOT EXISTS wallets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER UNIQUE, balance REAL DEFAULT 1500.0, currency TEXT DEFAULT "INR", last_updated DATETIME DEFAULT CURRENT_TIMESTAMP)')
+    conn.execute('CREATE TABLE IF NOT EXISTS transactions (id INTEGER PRIMARY KEY AUTOINCREMENT, wallet_id INTEGER, amount REAL, type TEXT, description TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)')
+    conn.execute('CREATE TABLE IF NOT EXISTS marketplace_listings (id INTEGER PRIMARY KEY AUTOINCREMENT, seller_id INTEGER, credits_amount REAL, price_inr REAL, status TEXT DEFAULT "active", created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
+    conn.execute('CREATE TABLE IF NOT EXISTS user_settings (user_id INTEGER PRIMARY KEY, language TEXT DEFAULT "en-IN", voice_enabled INTEGER DEFAULT 1, telemetry_visible INTEGER DEFAULT 1)')
+
+    try:
+        conn.execute('ALTER TABLE stations ADD COLUMN predicted_occupancy TEXT')
+    except: pass
+
     # Seed Grid Forecast if empty
     if not conn.execute('SELECT id FROM grid_forecast LIMIT 1').fetchone():
         forecasts = [(h, 0.5 + 0.4 * math.sin(h/4), 1.0 + 0.5 * math.cos(h/6)) for h in range(24)]
         conn.executemany('INSERT INTO grid_forecast (hour, load_factor, price_multiplier) VALUES (?,?,?)', forecasts)
-    
-    # Ensure Admin
+
+    # Ensure Admin User
     cursor = conn.cursor()
     cursor.execute('SELECT id FROM users WHERE email = "admin@vahan.com"')
-    if not cursor.fetchone():
-        cursor.execute('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-                     ('Steward', 'admin@vahan.com', generate_password_hash('steward2026'), 'admin'))
+    admin = cursor.fetchone()
+    if not admin:
+        cursor.execute('INSERT INTO users (name, email, password, role, is_premium, carbon_credits) VALUES (?, ?, ?, ?, ?, ?)',
+                     ('Steward', 'admin@vahan.com', generate_password_hash('steward2026'), 'admin', 1, 500.0))
+        admin_id = cursor.lastrowid
+        cursor.execute('INSERT OR IGNORE INTO wallets (user_id, balance) VALUES (?, ?)', (admin_id, 5000.0))
+    else:
+        admin_id = admin['id']
+
+    # Ensure Zeel default user for immediate seamless access
+    cursor.execute('SELECT id FROM users WHERE email = "zeel@gmail.com"')
+    zeel = cursor.fetchone()
+    if not zeel:
+        cursor.execute('INSERT INTO users (name, email, password, role, is_premium, carbon_credits) VALUES (?, ?, ?, ?, ?, ?)',
+                     ('Zeel Kundariya', 'zeel@gmail.com', generate_password_hash('zeel2026'), 'user', 1, 250.0))
+        zeel_id = cursor.lastrowid
+        cursor.execute('INSERT OR IGNORE INTO wallets (user_id, balance) VALUES (?, ?)', (zeel_id, 2500.0))
+    else:
+        zeel_id = zeel['id']
+
+    # Ensure Seed Stations if empty
+    if not conn.execute('SELECT id FROM stations LIMIT 1').fetchone():
+        demo_stations = [
+            ('Solaris Hub North', 'Ashram Road, Ahmedabad', 23.0338, 72.585, 'CCS2', 150, 12, 8, zeel_id, 35.0, 18.5, '85% Prob. in 1h (Stable)'),
+            ('Nexus Gandhinagar', 'Sector 21, Gandhinagar', 23.2156, 72.6369, 'Type2', 60, 6, 2, zeel_id, 60.0, 15.0, '60% Prob. in 1h (Rising)'),
+            ('Skyline Highway Node', 'NH-48, Kheda', 22.75, 72.68, 'CCS2', 240, 4, 1, zeel_id, 80.0, 22.0, '90% Prob. in 1h (Rising)'),
+            ('Kalol Central Charging Plaza', 'Kalol Highway, Gujarat', 23.235, 72.511, 'CCS2', 120, 10, 6, zeel_id, 40.0, 16.5, '45% Prob. in 1h (Stable)'),
+            ('Surat CyberCharge Hub', 'Ring Road, Surat', 21.1702, 72.8311, 'CCS2', 180, 8, 5, zeel_id, 55.0, 19.0, '70% Prob. in 1h (Stable)'),
+            ('Vadodara Express Volt', 'Alkapuri, Vadodara', 22.3072, 73.1812, 'CCS2', 120, 8, 4, zeel_id, 45.0, 17.5, '50% Prob. in 1h (Stable)')
+        ]
+        conn.executemany('INSERT INTO stations (name, address, lat, lng, connector_type, power_kw, total_bays, available_bays, owner_id, current_load, price_per_kwh, predicted_occupancy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', demo_stations)
+
+    # Seed User Data (fleet, vehicles, notifications)
+    seed_user_data(zeel_id, conn)
+
     conn.commit()
     conn.close()
 
@@ -124,7 +155,7 @@ def seed_user_data(user_id, conn):
             (fleet_id, 'Metro Delivery-04', 'GJ-01-AX-9999', 1200.0, 14400.0, 'idle', 95, 23.01, 72.55),
             (fleet_id, 'Executive Sedan 09', 'MH-01-EQ-7777', 2100.0, 25200.0, 'charging', 65, 19.0760, 72.8777)
         ]
-        conn.executemany('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_kwh, total_spend, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?)', demo_v)
+        conn.executemany('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_energy, total_cost, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?)', demo_v)
         
     # 3. Ensure some host stations exist
     s_count = conn.execute('SELECT COUNT(*) FROM stations WHERE owner_id = ?', (user_id,)).fetchone()[0]
@@ -153,8 +184,8 @@ def seed_user_data(user_id, conn):
                 cost = round(energy * 15.5, 0)
                 start = (now - timedelta(days=random.randint(0, 14), hours=random.randint(0, 23))).strftime('%Y-%m-%d %H:%M:%S')
                 end = (datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=random.randint(30, 90))).strftime('%Y-%m-%d %H:%M:%S')
-                demo_sess.append((vid, sid, energy, cost, start, end))
-            conn.executemany('INSERT INTO charging_sessions (vehicle_id, station_id, energy_kwh, cost, start_time, end_time) VALUES (?,?,?,?,?,?)', demo_sess)
+                demo_sess.append((vid, sid, energy, cost, round(energy*0.82, 1), round(energy*0.1, 1), start, end))
+            conn.executemany('INSERT INTO charging_sessions (vehicle_id, station_id, energy_kwh, cost, carbon_saved, credits_earned, start_time, end_time) VALUES (?,?,?,?,?,?,?,?)', demo_sess)
 
     # 5. Seed some notifications
     n_count = conn.execute('SELECT COUNT(*) FROM notifications WHERE user_id = ?', (user_id,)).fetchone()[0]
@@ -170,6 +201,17 @@ def seed_user_data(user_id, conn):
     conn.commit()
 
 init_db()
+
+import threading
+def _start_sim():
+    time.sleep(3)
+    while True:
+        try:
+            VahanIntelligence.simulate_ocpp_pulse()
+        except: pass
+        time.sleep(30)
+
+threading.Thread(target=_start_sim, daemon=True).start()
 
 # ---------- Identity Management ----------
 
@@ -270,18 +312,32 @@ def signup():
     try:
         conn.execute('INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
                      (name, email, generate_password_hash(password)))
+        new_user_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+        conn.execute('INSERT OR IGNORE INTO wallets (user_id, balance) VALUES (?, ?)', (new_user_id, 1500.0))
+        seed_user_data(new_user_id, conn)
         conn.commit()
         try:
-            send_vahan_email(to_email=email, subject="💎 VAHANSETU: Provisioning Success", title=f"Welcome, {name}!", message="Your account has been created. Please log in.", action_text="Login")
+            threading.Thread(target=send_vahan_email, kwargs={
+                'to_email': email,
+                'subject': "💎 VAHANSETU: Provisioning Success",
+                'title': f"Welcome, {name}!",
+                'message': "Your account has been created. Please log in.",
+                'action_text': "Login"
+            }, daemon=True).start()
         except: pass
         if is_api:
             return jsonify({'success': True, 'message': 'Account created! Please log in.'})
         flash('💎 Identity Provisioned: Please log in.', 'success')
         return redirect(url_for('serve'))
     except Exception as e:
-        if is_api:
-            return jsonify({'success': False, 'message': 'This email is already registered.'}), 409
-        flash('Security Alert: Email already exists.', 'error')
+        if 'UNIQUE' in str(e) or 'already registered' in str(e).lower():
+            if is_api:
+                return jsonify({'success': False, 'message': 'This email is already registered.'}), 409
+            flash('Security Alert: Email already exists.', 'error')
+        else:
+            if is_api:
+                return jsonify({'success': False, 'message': f'Provisioning Error: {str(e)}'}), 500
+            flash('Security Alert: Unable to provision account.', 'error')
         return redirect(url_for('serve'))
     finally: conn.close()
 
@@ -298,47 +354,62 @@ def login():
 
     if not email or not password:
         if is_api:
-            return jsonify({'success': False, 'message': 'Crendentials required.'}), 400
+            return jsonify({'success': False, 'message': 'Credentials required.'}), 400
         return redirect(url_for('serve'))
 
-    conn = get_db_connection()
-    u = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
-    conn.close()
-
-    if u and check_password_hash(u['password'], password):
-        # Generate token
-        token = jwt.encode({'user_id': u['id'], 'email': u['email'], 'exp': datetime.utcnow() + timedelta(hours=24)}, app.config['JWT_SECRET'], algorithm='HS256')
-        
-        login_user(User(u['id'], u['name'], u['email'], u['role'], u['is_premium']))
-        
-        try:
-            conn = get_db_connection()
-            conn.execute('INSERT INTO security_logs (user_id, ip_address, device_agent, status) VALUES (?, ?, ?, ?)',
-                         (u['id'], request.remote_addr, request.headers.get('User-Agent', 'Unknown'), 'Success'))
-            conn.commit(); conn.close()
-            send_vahan_email(to_email=email, subject="🔔 VahanSetu — Secure Login Detected", title="Login Successful", message=f"Session initiated from {request.remote_addr}.", action_text="Open Dashboard")
-        except: pass
-        
-        # Return JSON for React, redirect for HTML
-        if is_api:
-            resp = jsonify({'success': True, 'user': {'id': u['id'], 'name': u['name'], 'email': u['email'], 'role': u['role'], 'is_premium': u['is_premium']}})
-        else:
-            resp = redirect('/')
-        resp.set_cookie('vs_jwt_nexus', token, httponly=True, samesite='Lax')
-        if not is_api: flash(f'🛡️ Access Granted: {u["name"]}.', 'success')
-        return resp
-    
-    if u:
+    try:
         conn = get_db_connection()
-        conn.execute('INSERT INTO security_logs (user_id, ip_address, device_agent, status) VALUES (?, ?, ?, ?)',
-                     (u['id'], request.remote_addr, request.headers.get('User-Agent', 'Unknown'), 'Failure'))
-        conn.commit(); conn.close()
+        u = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
+        conn.close()
 
-    time.sleep(1.0)
-    if is_api:
-        return jsonify({'success': False, 'message': 'Invalid email or incorrect password.'}), 401
-    flash('Authentication Failure: Invalid credentials.', 'error')
-    return redirect(url_for('serve'))
+        if u and check_password_hash(u['password'], password):
+            # Generate token
+            token = jwt.encode({'user_id': u['id'], 'email': u['email'], 'exp': datetime.utcnow() + timedelta(hours=24)}, app.config['JWT_SECRET'], algorithm='HS256')
+            
+            login_user(User(u['id'], u['name'], u['email'], u['role'], u['is_premium']))
+            
+            try:
+                conn = get_db_connection()
+                conn.execute('INSERT INTO security_logs (user_id, ip_address, device_agent, status) VALUES (?, ?, ?, ?)',
+                             (u['id'], request.remote_addr, request.headers.get('User-Agent', 'Unknown'), 'Success'))
+                conn.commit()
+                conn.close()
+                threading.Thread(target=send_vahan_email, kwargs={
+                    'to_email': email,
+                    'subject': "🔔 VahanSetu — Secure Login Detected",
+                    'title': "Login Successful",
+                    'message': f"Session initiated from {request.remote_addr}.",
+                    'action_text': "Open Dashboard"
+                }, daemon=True).start()
+            except: pass
+            
+            # Return JSON for React, redirect for HTML
+            if is_api:
+                resp = jsonify({'success': True, 'user': {'id': u['id'], 'name': u['name'], 'email': u['email'], 'role': u['role'], 'is_premium': u['is_premium']}})
+            else:
+                resp = redirect('/')
+            resp.set_cookie('vs_jwt_nexus', token, httponly=True, samesite='Lax')
+            if not is_api: flash(f'🛡️ Access Granted: {u["name"]}.', 'success')
+            return resp
+        
+        if u:
+            try:
+                conn = get_db_connection()
+                conn.execute('INSERT INTO security_logs (user_id, ip_address, device_agent, status) VALUES (?, ?, ?, ?)',
+                             (u['id'], request.remote_addr, request.headers.get('User-Agent', 'Unknown'), 'Failure'))
+                conn.commit()
+                conn.close()
+            except: pass
+
+        if is_api:
+            return jsonify({'success': False, 'message': 'Invalid email or incorrect password.'}), 401
+        flash('Authentication Failure: Invalid credentials.', 'error')
+        return redirect(url_for('serve'))
+    except Exception as e:
+        if is_api:
+            return jsonify({'success': False, 'message': f'Server Error: {str(e)}'}), 500
+        flash('Server error occurred during authentication.', 'error')
+        return redirect(url_for('serve'))
 
 @app.route('/logout')
 def logout():

@@ -2,10 +2,15 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { api, showToast } from '../api';
 import { 
-  CreditCard, Zap, ArrowUpRight, ArrowDownRight, 
-  ShoppingBag, TrendingUp, Globe, ShieldCheck,
-  Award, Wallet, RefreshCw
+  CreditCard, Zap, MapPin as Globe, X
 } from 'lucide-react';
+const ArrowUpRight = Zap;
+const ArrowDownRight = Zap;
+const ShoppingBag = Zap;
+const TrendingUp = Zap;
+const ShieldCheck = Zap;
+const Award = Zap;
+const RefreshCw = Zap;
 
 export default function EconomyPage() {
   const [wallet, setWallet] = useState(null);
@@ -43,7 +48,7 @@ export default function EconomyPage() {
     }
   };
 
-  if (loading) return (
+  if (loading || !wallet) return (
     <div className="vs-loading-wrap">
       <div className="vs-spin"></div>
     </div>
@@ -81,7 +86,7 @@ export default function EconomyPage() {
                 overflow: 'hidden'
               }}>
                 <div style={{ position: 'absolute', top: 0, right: 0, padding: 20 }}>
-                  <Wallet size={32} color="var(--cyan)" style={{ opacity: 0.3 }} />
+                  <CreditCard size={32} color="var(--cyan)" style={{ opacity: 0.3 }} />
                 </div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>Available VahanPay Balance</div>
                 <div style={{ fontSize: '4rem', fontWeight: 800, fontFamily: 'Syne', letterSpacing: '-2px' }}>₹{wallet.balance.toLocaleString()}</div>

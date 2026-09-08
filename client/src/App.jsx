@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
@@ -12,6 +13,26 @@ import AdminPage from './pages/AdminPage';
 import Toast from './components/Toast';
 import Background from './components/Background';
 import VoiceAssistant from './components/VoiceAssistant';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError(error) { return { hasError: true }; }
+  componentDidCatch(error, errorInfo) { console.error("GLOBAL_CRASH:", error, errorInfo); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center', background: '#04060f' }}>
+          <div>
+            <h1 style={{ fontSize: '3rem', color: 'var(--cyan)' }}>System Breach Detected</h1>
+            <p style={{ opacity: 0.6 }}>A quantum render failure occurred. Auto-stabilizing...</p>
+            <button className="vs-btn" onClick={() => window.location.reload()}>Re-Initialize</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -49,8 +70,13 @@ export default function App() {
       <AuthProvider>
         <Background />
         <Toast />
-        <VoiceAssistant />
-        <AppRoutes />
+        <div id="vs-debug-hud" style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', color: '#0f0', fontSize: '10px', padding: '5px', pointerEvents: 'none' }}>
+           VahanSetu Debug: {window.location.pathname}
+        </div>
+        <ErrorBoundary>
+          <VoiceAssistant />
+          <AppRoutes />
+        </ErrorBoundary>
       </AuthProvider>
     </BrowserRouter>
   );

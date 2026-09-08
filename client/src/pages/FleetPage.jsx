@@ -5,11 +5,18 @@ import DigitalTwin from '../components/DigitalTwin';
 import { 
   Truck, ShieldCheck, CreditCard, Zap, 
   PlusCircle, Search, RefreshCcw, Car, Calendar, 
-  Edit3, Trash2, Bot, ShieldAlert, X, Sparkles, MapPin, 
-  Thermometer, Activity, TrendingUp, DollarSign, BatteryCharging, BatteryCharging as V2GIcon
+  Edit3, Trash2, ShieldAlert, X, MapPin, 
+  Activity, BatteryCharging
 } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
+
+const Bot = Zap;
+const Sparkles = Zap;
+const TrendingUp = Activity;
+const Thermometer = Activity;
+const DollarSign = CreditCard;
+const V2GIcon = BatteryCharging;
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 

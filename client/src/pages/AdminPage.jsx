@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { 
-  ShieldCheck, Activity, Zap, IndianRupee, Globe, 
-  Terminal, AlertTriangle, Play, Square, RefreshCcw,
-  Users, Server, Database, Lock
+  Activity, Zap, MapPin, 
+  Play, Square, RefreshCcw,
+  Users, Lock, Star
 } from 'lucide-react';
 import { api, showToast } from '../api';
+
+const ShieldCheck = Star;
+const IndianRupee = Zap;
+const Globe = MapPin;
+const Terminal = Zap;
+const AlertTriangle = Star;
+const Server = Zap;
+const Database = Zap;
 
 export default function AdminPage() {
   const [stats, setStats] = useState({

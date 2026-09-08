@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Mic, Volume2, Globe, Check } from 'lucide-react';
+import { Mic, MapPin as Globe, Check } from 'lucide-react';
 import { showToast } from '../api';
+const Volume2 = Mic;
 
 const LANGUAGES = [
   { code: 'en-IN', name: 'English', greeting: 'Welcome to VahanSetu. How can I assist you today?' },
-  { code: 'hi-IN', name: 'हिन्दी (Hindi)', greeting: 'वहनसेतु में आपका स्वागत है। मैं आपकी कैसे मदद कर सकता हूँ?' },
+  { code: 'hi-IN', name: 'हिन्दी (Hindi)', greeting: 'वहनसेતુ મેં આપનું સ્વાગત છે. હું તમારી શું મદદ કરી શકું?' },
   { code: 'gu-IN', name: 'ગુજરાતી (Gujarati)', greeting: 'વહનસેતુમાં આપનું સ્વાગત છે. હું તમારી શું મદદ કરી શકું?' }
 ];
 
@@ -12,6 +13,8 @@ export default function VoiceAssistant() {
   const [lang, setLang] = useState(LANGUAGES[0]);
   const [isOpen, setIsOpen] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  if (typeof window === 'undefined') return null;
 
   const speak = (text) => {
     if (!window.speechSynthesis) return;
@@ -66,7 +69,7 @@ export default function VoiceAssistant() {
           width: 64, height: 64, borderRadius: '50%', 
           background: isSpeaking ? 'var(--cyan)' : 'rgba(4,6,15,0.95)',
           border: '2px solid var(--cyan)',
-          display: 'flex', alignItems: 'center', justifyCenter: 'center',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: isSpeaking ? '0 0 30px var(--cyan)' : '0 10px 40px rgba(0,0,0,0.5)',
           cursor: 'pointer', transition: '0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
         }}

@@ -64,7 +64,19 @@ export default function LandingPage() {
         showToast(data.message || 'Authentication Failure', 'error');
       }
     } catch (err) {
-      showToast(err.response?.data?.message || 'Security Protocol: Connection Refused', 'error');
+      let msg = err.response?.data?.message;
+      if (!msg) {
+        if (err.response?.status >= 500) {
+          msg = 'Subsystem warming up on cloud server. Please retry in 10-15 seconds.';
+        } else if (err.code === 'ECONNABORTED') {
+          msg = 'Connection timed out. Server instance waking up, please retry.';
+        } else if (err.response?.status === 401) {
+          msg = 'Invalid credentials. Please verify your email and access key.';
+        } else {
+          msg = 'Network connection interrupted. Please try again.';
+        }
+      }
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }

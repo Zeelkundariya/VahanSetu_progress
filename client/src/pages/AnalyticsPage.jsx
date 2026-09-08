@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { 
-  BarChart3, Activity, Zap, IndianRupee, Crown, 
-  Download, RefreshCcw, TrendingUp, Clock, PieChart, Layers, X
-} from 'lucide-react';
+import { Zap, Download, RefreshCcw, Clock, X, Star } from 'lucide-react';
 import { 
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, 
   LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { api, showToast } from '../api';
+
+const BarChart3 = Zap;
+const Activity = Zap;
+const IndianRupee = Zap;
+const Crown = Star;
+const TrendingUp = Zap;
+const PieChart = Zap;
+const Layers = Zap;
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, 

@@ -4,9 +4,12 @@ import { logout, showToast } from '../api';
 import { useState, useEffect } from 'react';
 import Logo from './Logo';
 import { 
-  MapPin, Truck, Zap, BarChart3, ShieldCheck, 
-  Diamond, User, LogOut, Menu, X, Shield, Star, Wallet
+  MapPin, Truck, Zap, User, LogOut, Menu, X, Star, CreditCard
 } from 'lucide-react';
+const BarChart3 = Zap;
+const ShieldCheck = Star;
+const Diamond = Star;
+const Shield = Star;
 
 export default function Navbar() {
   const { user, setUser } = useAuth();
@@ -31,7 +34,7 @@ export default function Navbar() {
     { path: '/map',       icon: <MapPin size={15} />, label: 'Map' },
     { path: '/fleet',     icon: <Truck size={15} />, label: 'Fleet' },
     { path: '/cpo',       icon: <Zap size={15} />,   label: 'Host Portal' },
-    { path: '/economy',   icon: <Wallet size={15} />, label: 'Economy' },
+    { path: '/economy',   icon: <CreditCard size={15} />, label: 'Economy' },
     { path: '/analytics', icon: <BarChart3 size={15} />, label: 'Analytics' },
   ];
 

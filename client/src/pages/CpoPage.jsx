@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { 
-  Zap, Download, Plus, Server, IndianRupee, TrendingUp, Activity, 
-  Layout, Inbox, MapPin, ExternalLink, Trash2, Trophy, Terminal, 
-  HeartPulse, X, ShieldCheck
+  Zap, Download, Plus, Server, Activity, 
+  Layout, Inbox, MapPin, Trash2, X, Star
 } from 'lucide-react';
 import { api, showToast } from '../api';
+
+const IndianRupee = Zap;
+const TrendingUp = Activity;
+const ExternalLink = MapPin;
+const Trophy = Star;
+const Terminal = Zap;
+const HeartPulse = Activity;
+const ShieldCheck = Star;
 
 export default function CpoPage() {
   const [stations, setStations] = useState([]);

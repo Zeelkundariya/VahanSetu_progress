@@ -17,8 +17,10 @@ def send_vahan_email(to_email, subject, title, message, action_text="Visit Dashb
     """Sends a high-fidelity branded HTML email to the user."""
     
     if not MAIL_PASS:
-        print(f"📡 [SIMULATION] Email to {to_email}: {subject}")
-        print(f"   Content: {message}")
+        try:
+            print(f"[SIMULATION] Email to {to_email}: {subject}")
+            print(f"   Content: {message}")
+        except: pass
         return False
 
     html_content = f"""
@@ -67,12 +69,14 @@ def send_vahan_email(to_email, subject, title, message, action_text="Visit Dashb
     msg.attach(MIMEText(html_content, 'html'))
 
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
         server.starttls()
         server.login(MAIL_USER, MAIL_PASS)
         server.send_message(msg)
         server.quit()
         return True
     except Exception as e:
-        print(f"❌ [MAILER ERROR] Failed to send to {to_email}: {e}")
+        try:
+            print(f"[MAILER ERROR] Failed to send to {to_email}: {e}")
+        except: pass
         return False
