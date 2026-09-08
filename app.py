@@ -90,6 +90,17 @@ def init_db():
         conn.execute('ALTER TABLE stations ADD COLUMN predicted_occupancy TEXT')
     except: pass
 
+    try:
+        conn.execute('ALTER TABLE fleet_vehicles ADD COLUMN total_kwh REAL DEFAULT 0.0')
+    except: pass
+    try:
+        conn.execute('ALTER TABLE fleet_vehicles ADD COLUMN total_spend REAL DEFAULT 0.0')
+    except: pass
+    try:
+        conn.execute('UPDATE fleet_vehicles SET total_kwh = total_energy WHERE (total_kwh IS NULL OR total_kwh = 0) AND total_energy IS NOT NULL')
+        conn.execute('UPDATE fleet_vehicles SET total_spend = total_cost WHERE (total_spend IS NULL OR total_spend = 0) AND total_cost IS NOT NULL')
+    except: pass
+
     # Seed Grid Forecast if empty
     if not conn.execute('SELECT id FROM grid_forecast LIMIT 1').fetchone():
         forecasts = [(h, 0.5 + 0.4 * math.sin(h/4), 1.0 + 0.5 * math.cos(h/6)) for h in range(24)]
@@ -117,6 +128,7 @@ def init_db():
         cursor.execute('INSERT OR IGNORE INTO wallets (user_id, balance) VALUES (?, ?)', (zeel_id, 2500.0))
     else:
         zeel_id = zeel['id']
+        cursor.execute('UPDATE users SET carbon_credits = 250.0 WHERE id = ? AND (carbon_credits IS NULL OR carbon_credits = 0)', (zeel_id,))
 
     # Ensure Seed Stations if empty
     if not conn.execute('SELECT id FROM stations LIMIT 1').fetchone():
@@ -130,7 +142,17 @@ def init_db():
         ]
         conn.executemany('INSERT INTO stations (name, address, lat, lng, connector_type, power_kw, total_bays, available_bays, owner_id, current_load, price_per_kwh, predicted_occupancy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', demo_stations)
 
-    # Seed User Data (fleet, vehicles, notifications)
+    # Seed Marketplace Listings if empty
+    if not conn.execute('SELECT id FROM marketplace_listings LIMIT 1').fetchone():
+        demo_listings = [
+            (admin_id, 150.0, 187.5, 'active'),
+            (admin_id, 300.0, 360.0, 'active'),
+            (admin_id, 500.0, 575.0, 'active'),
+            (admin_id, 1000.0, 1100.0, 'active')
+        ]
+        conn.executemany('INSERT INTO marketplace_listings (seller_id, credits_amount, price_inr, status) VALUES (?, ?, ?, ?)', demo_listings)
+
+    # Seed User Data (fleet, vehicles, notifications, carbon ledger)
     seed_user_data(zeel_id, conn)
 
     conn.commit()
@@ -149,13 +171,24 @@ def seed_user_data(user_id, conn):
     v_count = conn.execute('SELECT COUNT(*) FROM fleet_vehicles WHERE fleet_id = ?', (fleet_id,)).fetchone()[0]
     if v_count == 0:
         demo_v = [
-            (fleet_id, 'Intercity-Express 01', 'GJ-01-EV-1001', 4500.0, 54000.0, 'moving', 88, 23.0225, 72.5714),
-            (fleet_id, 'Gandhinagar Shuttle', 'GJ-18-EV-2002', 2800.0, 33600.0, 'moving', 42, 23.2156, 72.6369),
-            (fleet_id, 'Industrial Cargo-X', 'GJ-18-TX-0052', 8900.0, 106800.0, 'low_battery', 12, 23.23, 72.51),
-            (fleet_id, 'Metro Delivery-04', 'GJ-01-AX-9999', 1200.0, 14400.0, 'idle', 95, 23.01, 72.55),
-            (fleet_id, 'Executive Sedan 09', 'MH-01-EQ-7777', 2100.0, 25200.0, 'charging', 65, 19.0760, 72.8777)
+            (fleet_id, 'Intercity-Express 01', 'GJ-01-EV-1001', 4500.0, 54000.0, 4500.0, 54000.0, 'moving', 88, 23.0225, 72.5714),
+            (fleet_id, 'Gandhinagar Shuttle', 'GJ-18-EV-2002', 2800.0, 33600.0, 2800.0, 33600.0, 'moving', 42, 23.2156, 72.6369),
+            (fleet_id, 'Industrial Cargo-X', 'GJ-18-TX-0052', 8900.0, 106800.0, 8900.0, 106800.0, 'low_battery', 12, 23.23, 72.51),
+            (fleet_id, 'Metro Delivery-04', 'GJ-01-AX-9999', 1200.0, 14400.0, 1200.0, 14400.0, 'idle', 95, 23.01, 72.55),
+            (fleet_id, 'Executive Sedan 09', 'MH-01-EQ-7777', 2100.0, 25200.0, 2100.0, 25200.0, 'charging', 65, 19.0760, 72.8777)
         ]
-        conn.executemany('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_energy, total_cost, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?)', demo_v)
+        try:
+            conn.executemany('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_energy, total_cost, total_kwh, total_spend, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?,?,?)', demo_v)
+        except Exception:
+            # Fallback if extra columns not yet present
+            demo_fallback = [
+                (fleet_id, 'Intercity-Express 01', 'GJ-01-EV-1001', 4500.0, 54000.0, 'moving', 88, 23.0225, 72.5714),
+                (fleet_id, 'Gandhinagar Shuttle', 'GJ-18-EV-2002', 2800.0, 33600.0, 'moving', 42, 23.2156, 72.6369),
+                (fleet_id, 'Industrial Cargo-X', 'GJ-18-TX-0052', 8900.0, 106800.0, 'low_battery', 12, 23.23, 72.51),
+                (fleet_id, 'Metro Delivery-04', 'GJ-01-AX-9999', 1200.0, 14400.0, 'idle', 95, 23.01, 72.55),
+                (fleet_id, 'Executive Sedan 09', 'MH-01-EQ-7777', 2100.0, 25200.0, 'charging', 65, 19.0760, 72.8777)
+            ]
+            conn.executemany('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_energy, total_cost, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?)', demo_fallback)
         
     # 3. Ensure some host stations exist
     s_count = conn.execute('SELECT COUNT(*) FROM stations WHERE owner_id = ?', (user_id,)).fetchone()[0]
@@ -197,6 +230,17 @@ def seed_user_data(user_id, conn):
             (user_id, 'Gandhinagar Shuttle scheduled maintenance in 48 hours')
         ]
         conn.executemany('INSERT INTO notifications (user_id, message) VALUES (?, ?)', demo_n)
+
+    # 6. Seed Carbon Credit Verification Ledger
+    c_count = conn.execute('SELECT COUNT(*) FROM carbon_ledger WHERE user_id = ?', (user_id,)).fetchone()[0]
+    if c_count == 0:
+        demo_credits = [
+            (user_id, 75.0, 'Solar Grid Off-Peak Session (Ahmedabad North)'),
+            (user_id, 120.0, 'V2G Peak Grid Frequency Support Protocol'),
+            (user_id, 55.0, 'Intercity Zero-Emission Corridor Transit')
+        ]
+        conn.executemany('INSERT INTO carbon_ledger (user_id, amount, source) VALUES (?, ?, ?)', demo_credits)
+        conn.execute('UPDATE users SET carbon_credits = 250.0 WHERE id = ? AND (carbon_credits IS NULL OR carbon_credits = 0)', (user_id,))
 
     conn.commit()
 
@@ -432,22 +476,37 @@ def api_fleet():
             fleet = conn.execute('SELECT * FROM fleets WHERE user_id = ?', (current_user.id,)).fetchone()
         v_count = conn.execute('SELECT COUNT(*) FROM fleet_vehicles WHERE fleet_id = ?', (fleet['id'],)).fetchone()[0]
         if v_count == 0:
-            demo = [(fleet['id'],'Ahmedabad Express-01','GJ-01-EV-1200',1540.0,18500.0,23.0225,72.5714,'idle',82),
-                    (fleet['id'],'Gandhinagar Courier','GJ-18-AV-9981',2200.0,26400.0,23.2156,72.6369,'charging',45),
-                    (fleet['id'],'Kalol Industrial Ops','GJ-18-TX-0052',4500.0,54000.0,23.23,72.51,'low_battery',12)]
-            conn.executemany('INSERT INTO fleet_vehicles (fleet_id,vehicle_name,vehicle_number,total_kwh,total_spend,lat,lng,status,battery_pct) VALUES (?,?,?,?,?,?,?,?,?)', demo)
+            demo = [
+                (fleet['id'],'Ahmedabad Express-01','GJ-01-EV-1200',1540.0,18500.0,1540.0,18500.0,23.0225,72.5714,'idle',82),
+                (fleet['id'],'Gandhinagar Courier','GJ-18-AV-9981',2200.0,26400.0,2200.0,26400.0,23.2156,72.6369,'charging',45),
+                (fleet['id'],'Kalol Industrial Ops','GJ-18-TX-0052',4500.0,54000.0,4500.0,54000.0,23.23,72.51,'low_battery',12),
+                (fleet['id'],'Metro Delivery-04','GJ-01-AX-9999',1200.0,14400.0,1200.0,14400.0,23.01,72.55,'idle',95),
+                (fleet['id'],'Executive Sedan 09','MH-01-EQ-7777',2100.0,25200.0,2100.0,25200.0,19.0760,72.8777,'charging',65)
+            ]
+            try:
+                conn.executemany('INSERT INTO fleet_vehicles (fleet_id,vehicle_name,vehicle_number,total_energy,total_cost,total_kwh,total_spend,lat,lng,status,battery_pct) VALUES (?,?,?,?,?,?,?,?,?,?,?)', demo)
+            except Exception:
+                conn.executemany('INSERT INTO fleet_vehicles (fleet_id,vehicle_name,vehicle_number,total_energy,total_cost,lat,lng,status,battery_pct) VALUES (?,?,?,?,?,?,?,?,?)',
+                                 [(d[0], d[1], d[2], d[3], d[4], d[7], d[8], d[9], d[10]) for d in demo])
             conn.commit()
         vehicles = [dict(v) for v in conn.execute('SELECT * FROM fleet_vehicles WHERE fleet_id = ?', (fleet['id'],)).fetchall()]
-        print(f"DEBUG: api_fleet - user_id: {current_user.id}, fleet_id: {fleet['id']}, vehicle_count: {len(vehicles)}")
+        for v in vehicles:
+            v['total_kwh'] = float(v.get('total_kwh') or v.get('total_energy') or 0.0)
+            v['total_spend'] = float(v.get('total_spend') or v.get('total_cost') or 0.0)
+            v['range_km'] = float(v.get('range_km') or round((v.get('battery_pct') or 50) * 3.8, 1))
+
         sessions_raw = conn.execute('SELECT cs.*, fv.vehicle_name, s.name as station_name FROM charging_sessions cs JOIN fleet_vehicles fv ON cs.vehicle_id = fv.id JOIN stations s ON cs.station_id = s.id WHERE fv.fleet_id = ? ORDER BY cs.start_time DESC LIMIT 15', (fleet['id'],)).fetchall()
-        totals = conn.execute('SELECT SUM(total_kwh), SUM(total_spend), AVG(battery_pct) FROM fleet_vehicles WHERE fleet_id = ?', (fleet['id'],)).fetchone()
+        
+        sum_kwh = sum(v['total_kwh'] for v in vehicles)
+        sum_spend = sum(v['total_spend'] for v in vehicles)
+        avg_battery = (sum(v.get('battery_pct', 0) for v in vehicles) / len(vehicles)) if vehicles else 0.0
+        
         resp_data = {
             'fleet': dict(fleet), 'fleet_vehicles': vehicles,
             'fleet_sessions': [dict(s) for s in sessions_raw],
-            'fleet_kwh': round(totals[0] or 0, 1), 'fleet_spend': round(totals[1] or 0, 2),
-            'avg_battery': round(totals[2] or 0, 1), 'health_score': 98
+            'fleet_kwh': round(sum_kwh, 1), 'fleet_spend': round(sum_spend, 2),
+            'avg_battery': round(avg_battery, 1), 'health_score': 98
         }
-        print(f"DEBUG: api_fleet - response: {resp_data['fleet_kwh']} kWh, {resp_data['fleet_spend']} spend")
         return jsonify(resp_data)
     finally: conn.close()
 
@@ -500,8 +559,12 @@ def fleet_add():
             fleet_id = fleet['id']
             
         # Add vehicle with randomized telemetry
-        conn.execute('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_kwh, total_spend, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?)',
-                     (fleet_id, name, plate, 0, 0, 'idle', random.randint(30, 95), 23.0225, 72.5714))
+        try:
+            conn.execute('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_energy, total_cost, total_kwh, total_spend, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+                         (fleet_id, name, plate, 0.0, 0.0, 0.0, 0.0, 'idle', random.randint(30, 95), 23.0225, 72.5714))
+        except Exception:
+            conn.execute('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_energy, total_cost, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?)',
+                         (fleet_id, name, plate, 0.0, 0.0, 'idle', random.randint(30, 95), 23.0225, 72.5714))
         conn.commit()
         return jsonify({'success': True})
     finally: conn.close()
@@ -694,26 +757,6 @@ def api_analytics_filter():
     energy = [random.randint(50, 400) for _ in range(n)]
     revenue = [random.randint(1000, 5000) for _ in range(n)]
     return jsonify({'labels': labels, 'energy': energy, 'revenue': revenue})
-
-@app.route('/api/credits/ledger')
-@login_required
-def api_credits_ledger():
-    # Simulated ledger based on user activity
-    return jsonify({
-        'total_credits': random.randint(1000, 2500),
-        'trees_saved': random.randint(12, 45),
-        'co2_kg': random.randint(300, 900),
-        'rank': 'Elite'
-    })
-
-@app.route('/api/v2g/revenue')
-@login_required
-def api_v2g_revenue():
-    return jsonify({
-        'estimated_hourly_revenue': round(random.uniform(15.5, 42.0), 2),
-        'active_grids': 4,
-        'grid_stability_contribution': '98.2%'
-    })
 
 @app.route('/api/notifications')
 @login_required
@@ -973,12 +1016,14 @@ def get_carbon_ledger():
     user = conn.execute('SELECT carbon_credits FROM users WHERE id = ?', (current_user.id,)).fetchone()
     ledger = conn.execute('SELECT * FROM carbon_ledger WHERE user_id = ? ORDER BY timestamp DESC', (current_user.id,)).fetchall()
     conn.close()
+    creds = float(user['carbon_credits']) if (user and user['carbon_credits'] is not None) else 250.0
     return jsonify({
-        'total_balance': user['carbon_credits'] if user else 0,
+        'total_balance': creds,
+        'total_credits': creds,
         'history': [dict(l) for l in ledger],
         'impact_metrics': {
-            'trees_planted_equiv': round(user['carbon_credits'] / 10, 1) if user else 0,
-            'co2_offset_kg': round(user['carbon_credits'] * 2.5, 1) if user else 0
+            'trees_planted_equiv': round(creds / 10, 1),
+            'co2_offset_kg': round(creds * 2.5, 1)
         }
     })
 

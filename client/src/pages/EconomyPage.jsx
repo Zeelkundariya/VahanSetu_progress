@@ -135,14 +135,14 @@ export default function EconomyPage() {
                         <Award size={18} color="var(--green)" />
                         <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)' }}>YOUR STEWARDSHIP</span>
                      </div>
-                     <div style={{ fontSize: '2rem', fontWeight: 800 }}>{credits.total_balance} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>CREDITS</span></div>
+                     <div style={{ fontSize: '2rem', fontWeight: 800 }}>{Number(credits?.total_balance ?? credits?.total_credits ?? 0)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>CREDITS</span></div>
                   </div>
                   <div className="vs-glass" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid var(--purple)' }}>
                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                         <TrendingUp size={18} color="var(--purple)" />
                         <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)' }}>ECO EQUIVALENT</span>
                      </div>
-                     <div style={{ fontSize: '2rem', fontWeight: 800 }}>{(credits.total_balance * 0.15).toFixed(1)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>kg CO2</span></div>
+                     <div style={{ fontSize: '2rem', fontWeight: 800 }}>{(Number(credits?.total_balance ?? credits?.total_credits ?? 0) * 0.15).toFixed(1)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>kg CO2</span></div>
                   </div>
                </div>
 

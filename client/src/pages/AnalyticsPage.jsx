@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { Zap, Download, RefreshCcw, Clock, X, Star } from 'lucide-react';
+import { Zap, Download, RefreshCcw, Clock, X, Star, ShieldCheck } from 'lucide-react';
 import { 
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, 
   LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler

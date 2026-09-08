@@ -151,7 +151,7 @@ export default function ProfilePage() {
                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.1em', marginTop: 4 }}>Charges</div>
                     </div>
                     <div style={{ background: 'rgba(0,0,0,0.3)', padding: 14, borderRadius: 16, border: '1px solid rgba(255,255,255,0.03)', textAlign: 'left' }}>
-                       <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.2rem', fontWeight: 800, color: 'var(--green)' }}>{(stats.total_kwh || 0).toFixed(1)}</div>
+                       <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.2rem', fontWeight: 800, color: 'var(--green)' }}>{(Number(stats.total_kwh || 0)).toFixed(1)}</div>
                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.1em', marginTop: 4 }}>kWh Out</div>
                     </div>
                  </div>
@@ -162,7 +162,7 @@ export default function ProfilePage() {
                        <Zap size={14} /> VahanCredits Ledger
                     </div>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, marginBottom: 15 }}>
-                       <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.4rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{credits.total_balance}</div>
+                       <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.4rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{credits.total_balance ?? credits.total_credits ?? 0}</div>
                        <div style={{ fontSize: '0.7rem', color: 'var(--green)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Liquid Credits</div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -348,12 +348,12 @@ export default function ProfilePage() {
                         <tr><th>Transaction ID</th><th>Earning Event</th><th>Impact Factor</th><th>Credit Amount</th></tr>
                      </thead>
                      <tbody>
-                        {credits.history.length === 0 ? (
+                        {(credits.history || []).length === 0 ? (
                            <tr><td colSpan="4" style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>Initial Credits seeding in progress...</td></tr>
                         ) : (
-                           credits.history.map((h, i) => (
+                           (credits.history || []).map((h, i) => (
                               <tr key={i}>
-                                 <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>#{h.id.toString().padStart(6, '0')}</td>
+                                 <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>#{h.id ? h.id.toString().padStart(6, '0') : (i + 1).toString().padStart(6, '0')}</td>
                                  <td style={{ fontWeight: 700 }}>{h.source}</td>
                                  <td style={{ color: 'var(--green)' }}>Verified Green</td>
                                  <td style={{ fontWeight: 900, color: 'var(--green)' }}>+{h.amount} VS</td>

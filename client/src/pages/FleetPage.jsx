@@ -6,7 +6,7 @@ import {
   Truck, ShieldCheck, CreditCard, Zap, 
   PlusCircle, Search, RefreshCcw, Car, Calendar, 
   Edit3, Trash2, ShieldAlert, X, MapPin, 
-  Activity, BatteryCharging
+  Activity, BatteryCharging, Cpu
 } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
