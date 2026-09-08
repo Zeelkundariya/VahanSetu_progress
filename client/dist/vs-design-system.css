@@ -1,0 +1,1764 @@
+/* ================================================================
+   VAHANSETU — APEX DESIGN SYSTEM v5.0  "Nexus Volt"
+   World-Class EV Platform UI · Tesla/Rivian/Apple Level
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,300&family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* ================================================================
+   SECTION 1 — DESIGN TOKENS
+   ================================================================ */
+:root {
+  /* ── Core Background ── */
+  --bg-void:        #010308;
+  --bg-deep:        #04060f;
+  --bg-surface:     #080d1c;
+  --bg-card:        rgba(8, 13, 28, 0.75);
+  --bg-glass:       rgba(8, 13, 28, 0.55);
+  --bg-glass-heavy: rgba(4, 6, 15, 0.88);
+
+  /* ── Electric Cyan (Primary) ── */
+  --cyan:         #00f0ff;
+  --cyan-2:       #00c4d4;
+  --cyan-3:       #007d8f;
+  --cyan-dim:     rgba(0, 240, 255, 0.09);
+  --cyan-glow:    rgba(0, 240, 255, 0.4);
+  --cyan-border:  rgba(0, 240, 255, 0.18);
+  --cyan-text:    #00f0ff;
+
+  /* ── Neon Purple (Secondary) ── */
+  --purple:        #b56dff;
+  --purple-2:      #8b42e8;
+  --purple-dim:    rgba(181, 109, 255, 0.1);
+  --purple-glow:   rgba(181, 109, 255, 0.35);
+  --purple-border: rgba(181, 109, 255, 0.18);
+
+  /* ── Electric Green (Accent) ── */
+  --green:         #00ffa3;
+  --green-2:       #00c87d;
+  --green-dim:     rgba(0, 255, 163, 0.09);
+  --green-glow:    rgba(0, 255, 163, 0.3);
+  --green-border:  rgba(0, 255, 163, 0.18);
+
+  /* ── Gold / Amber ── */
+  --gold:          #ffd60a;
+  --gold-2:        #e6b800;
+  --gold-dim:      rgba(255, 214, 10, 0.1);
+  --gold-glow:     rgba(255, 214, 10, 0.3);
+  --gold-border:   rgba(255, 214, 10, 0.2);
+
+  /* ── Status ── */
+  --red:           #ff3d6b;
+  --red-dim:       rgba(255, 61, 107, 0.1);
+  --red-border:    rgba(255, 61, 107, 0.2);
+  --orange:        #ff7d3b;
+
+  /* ── Text ── */
+  --text-primary:   #eaf4ff;
+  --text-secondary: #7a9cbf;
+  --text-muted:     #334566;
+  --text-accent:    var(--cyan);
+
+  /* ── Glass & Borders ── */
+  --glass-border:    rgba(0, 240, 255, 0.1);
+  --glass-border-2:  rgba(255, 255, 255, 0.05);
+  --glass-sheen:     rgba(255, 255, 255, 0.02);
+
+  /* ── Shadows & Glow ── */
+  --shadow-sm:   0 2px 16px rgba(0,0,0,0.5);
+  --shadow-md:   0 8px 40px rgba(0,0,0,0.6);
+  --shadow-lg:   0 24px 70px rgba(0,0,0,0.75);
+  --shadow-xl:   0 48px 120px rgba(0,0,0,0.85);
+  --glow-cyan:   0 0 50px rgba(0,240,255,0.28), 0 0 100px rgba(0,240,255,0.12);
+  --glow-purple: 0 0 50px rgba(181,109,255,0.28), 0 0 100px rgba(181,109,255,0.12);
+  --glow-green:  0 0 50px rgba(0,255,163,0.22), 0 0 100px rgba(0,255,163,0.1);
+  --glow-gold:   0 0 50px rgba(255,214,10,0.25), 0 0 100px rgba(255,214,10,0.1);
+
+  /* ── Spacing Scale (Professional standard) ── */
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  24px;
+  --s-6:  32px;
+  --s-8:  48px;
+  --s-10: 64px;
+  --s-12: 80px;
+
+  /* ── Radius ── */
+  --r-xs:  6px;
+  --r-sm:  12px;
+  --r-md:  16px;
+  --r:     20px;
+  --r-lg:  28px;
+  --r-xl:  40px;
+
+  /* ── Motion ── */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0, 0, 0.2, 1);
+  --dur-fast:    120ms;
+  --dur-normal:  240ms;
+  --dur-slow:    420ms;
+  --dur-xslow:   700ms;
+
+  /* ── Z-Index ── */
+  --z-void:     -10;
+  --z-bg:       -1;
+  --z-base:     1;
+  --z-nav:      1000;
+  --z-modal:    2000;
+  --z-toast:    3000;
+}
+[data-theme="light"] .vs-theme-toggle:hover {
+  border-color: var(--cyan-border);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+
+/* ================================================================
+   SECTION 1.4 — LIGHT MODE COMPONENT OVERRIDES
+   Component-level adjustments that can't be handled by tokens alone
+   ================================================================ */
+
+/* ── html color-scheme ── */
+[data-theme="light"] html,
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* ── Body ── */
+[data-theme="light"] body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+}
+
+/* ── Navbar ── */
+[data-theme="light"] .vs-navbar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 247, 251, 0.9) 100%);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.03),
+    0 4px 20px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+[data-theme="light"] .vs-navbar::after {
+  background: linear-gradient(90deg, transparent 0%, var(--cyan) 25%, var(--purple) 75%, transparent 100%);
+  opacity: 0.2;
+}
+
+/* ── Nav Links ── */
+[data-theme="light"] .vs-nav-link::before {
+  background: rgba(0, 150, 168, 0.06);
+}
+[data-theme="light"] .vs-nav-link.active {
+  background: rgba(0, 150, 168, 0.08);
+}
+
+/* ── User Chip ── */
+[data-theme="light"] .vs-user-chip {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+[data-theme="light"] .vs-user-chip:hover {
+  background: rgba(0, 150, 168, 0.05);
+  border-color: var(--cyan-border);
+}
+[data-theme="light"] .vs-user-avatar {
+  color: #fff;
+}
+
+/* ── Logo text ── */
+[data-theme="light"] .vs-logo-text {
+  background: linear-gradient(to right, #0f172a, var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+[data-theme="light"] .vs-logo-name {
+  background: linear-gradient(135deg, var(--text-primary) 30%, var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ── Glass Cards ── */
+[data-theme="light"] .vs-glass {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .vs-glass::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 150, 168, 0.06) 50%, transparent 100%);
+}
+
+/* ── Cards ── */
+[data-theme="light"] .vs-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .vs-card:hover {
+  border-color: var(--cyan-border);
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Stat Cards ── */
+[data-theme="light"] .vs-stat-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .vs-stat-card::after {
+  background: var(--card-glow-color, rgba(0, 150, 168, 0.04));
+}
+[data-theme="light"] .vs-stat-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Buttons ── */
+[data-theme="light"] .vs-btn-primary {
+  background: linear-gradient(135deg, var(--cyan), var(--cyan-2));
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 150, 168, 0.25);
+}
+[data-theme="light"] .vs-btn-primary:hover {
+  box-shadow: 0 8px 24px rgba(0, 150, 168, 0.35), var(--glow-cyan);
+}
+
+[data-theme="light"] .vs-btn-secondary {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .vs-btn-secondary:hover {
+  border-color: var(--cyan-border);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+
+[data-theme="light"] .vs-btn-ghost:hover {
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+
+[data-theme="light"] .vs-btn-gold {
+  color: #fff;
+}
+
+[data-theme="light"] .vs-btn-icon {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: var(--text-secondary);
+}
+[data-theme="light"] .vs-btn-icon:hover {
+  border-color: var(--cyan-border);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+
+/* ── Shimmer on buttons ── */
+[data-theme="light"] .vs-btn::before {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+}
+
+/* ── Inputs & Forms ── */
+[data-theme="light"] .vs-input {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  color: var(--text-primary);
+}
+[data-theme="light"] .vs-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0, 150, 168, 0.1);
+  background: #fff;
+}
+[data-theme="light"] .vs-input::placeholder {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .vs-float-input {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  color: var(--text-primary);
+}
+[data-theme="light"] .vs-float-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0, 150, 168, 0.1);
+}
+
+/* ── Search Bar ── */
+[data-theme="light"] .vs-search-bar {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+[data-theme="light"] .vs-search-bar:focus-within {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0, 150, 168, 0.08);
+}
+[data-theme="light"] .vs-search-bar input {
+  color: var(--text-primary);
+}
+
+/* ── Tables ── */
+[data-theme="light"] .vs-table thead th {
+  background: rgba(245, 247, 251, 0.8);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  color: var(--text-muted);
+}
+[data-theme="light"] .vs-table tbody td {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+}
+[data-theme="light"] .vs-table tbody tr:hover td {
+  background: rgba(0, 150, 168, 0.03);
+}
+[data-theme="light"] .vs-table-wrap {
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* ── Toasts ── */
+[data-theme="light"] .vs-toast {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+}
+
+/* ── Modals ── */
+[data-theme="light"] .vs-modal-overlay {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+}
+[data-theme="light"] .vs-modal {
+  box-shadow: var(--shadow-xl);
+}
+
+/* ── Page Header ── */
+[data-theme="light"] .vs-page-header {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: linear-gradient(180deg, rgba(0, 150, 168, 0.025), transparent);
+}
+[data-theme="light"] .vs-page-title {
+  background: linear-gradient(135deg, var(--text-primary), var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ── Divider ── */
+[data-theme="light"] .vs-divider {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+/* ── Scrollbar ── */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 150, 168, 0.18);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 150, 168, 0.3);
+}
+
+/* ── Selection ── */
+[data-theme="light"] ::selection {
+  background: rgba(0, 150, 168, 0.15);
+  color: var(--text-primary);
+}
+
+/* ── Focus ring ── */
+[data-theme="light"] :focus-visible {
+  outline: 2px solid rgba(0, 150, 168, 0.5);
+}
+
+/* ── Skeleton (light) ── */
+[data-theme="light"] .vs-skeleton {
+  background: linear-gradient(90deg,
+    rgba(15, 23, 42, 0.04) 25%,
+    rgba(15, 23, 42, 0.08) 50%,
+    rgba(15, 23, 42, 0.04) 75%
+  );
+  background-size: 400% 100%;
+}
+
+/* ── Background system (light mode) ── */
+[data-theme="light"] .vs-bg-canvas {
+  opacity: 0.15;
+}
+[data-theme="light"] #vs-energy-canvas {
+  opacity: 0.05;
+}
+[data-theme="light"] .vs-grid-floor {
+  opacity: 0.15;
+}
+[data-theme="light"] .vs-scan {
+  opacity: 0.06;
+}
+
+/* ── Leaflet popup (light) ── */
+[data-theme="light"] .leaflet-popup-content-wrapper {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 150, 168, 0.15) !important;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12) !important;
+  color: var(--text-primary);
+}
+[data-theme="light"] .leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* ── Mobile nav panel (light) ── */
+@media (max-width: 900px) {
+  [data-theme="light"] .vs-nav-links {
+    background: rgba(255, 255, 255, 0.97);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   SECTION 1.5 — SHARED UTILITIES
+   ──────────────────────────────────────────────────────────────── */
+.vs-flex-center { display: flex; align-items: center; justify-content: center; }
+.vs-flex-y      { display: flex; align-items: center; }
+.vs-gap-1       { gap: var(--s-1); }
+.vs-gap-2       { gap: var(--s-2); }
+.vs-gap-3       { gap: var(--s-3); }
+.vs-gap-4       { gap: var(--s-4); }
+
+/* Center icons with text (Lucide Icons) */
+.vs-icon-text {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  vertical-align: middle;
+}
+.vs-icon-text svg { flex-shrink: 0; }
+
+/* Dashboard Naming Standard */
+.vs-section-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+  margin-bottom: var(--s-4);
+  text-transform: uppercase;
+}
+
+/* Standardized Card Component */
+.vs-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  padding: var(--s-5);
+  transition: transform var(--dur-normal) var(--ease-spring), border var(--dur-normal);
+  position: relative;
+  overflow: hidden;
+}
+.vs-card:hover {
+  border-color: var(--cyan-border);
+  transform: translateY(-2px);
+}
+
+/* Status: Live Pulse Dot (Real CSS) */
+.vs-pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  position: relative;
+  display: inline-block;
+  margin-right: var(--s-2);
+  box-shadow: 0 0 8px var(--green);
+}
+.vs-pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  animation: vs-pulse 2s infinite;
+  opacity: 0;
+}
+@keyframes vs-pulse {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.vs-badge-live {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: var(--green-dim);
+  border: 1px solid var(--green-border);
+  border-radius: 50px;
+  color: var(--green);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ================================================================
+   SECTION 2 — RESET & BASE
+   ================================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+body {
+  font-family: 'Inter', 'Space Grotesk', -apple-system, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; font-family: inherit; }
+
+/* ================================================================
+   SECTION 2.5 — VAHANSETU "NEXUS" branding (Antigravity Style)
+   ================================================================ */
+
+/* ── Global Logo Link Styling ── */
+.vs-logo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  text-decoration: none;
+  cursor: pointer;
+  perspective: 1000px;
+  transition: transform 0.4s var(--ease-spring);
+}
+
+.vs-logo:hover {
+  transform: scale(1.03) translateY(-1px);
+}
+
+/* ── Container for the custom VS monogram ── */
+.vs-logo-mark {
+  width: 90px;
+  height: 48px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.5s var(--ease-spring);
+}
+
+/* Subtle background glow layer */
+.vs-glow-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 240, 255, 0.15) 0%, transparent 75%);
+  animation: logo-nexus-glow 4s ease-in-out infinite;
+  pointer-events: none;
+  filter: blur(15px);
+}
+
+@keyframes logo-nexus-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.25); }
+}
+
+/* The SVG main mark */
+.vs-logo-nexus svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.2));
+}
+
+/* ── The "Energy Current" marching ants ── */
+.vs-energy-track {
+  stroke-dasharray: 20, 150;
+  stroke-dashoffset: 0;
+  animation: vs-nexus-current 2.4s linear infinite;
+}
+
+@keyframes vs-nexus-current {
+  to { stroke-dashoffset: -170; } /* Matches dash interval for smooth loop */
+}
+
+/* ── Typography Styling ── */
+.vs-logo-text {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.45rem;
+  letter-spacing: 2px;
+  color: #fff;
+  text-transform: uppercase;
+  background: linear-gradient(to right, #fff, #00f0ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.vs-text-accent {
+  font-weight: 500;
+  color: var(--cyan);
+  opacity: 1; /* Full opacity */
+  letter-spacing: 2px; /* Less spaced for better readability */
+  text-shadow: 0 0 10px rgba(0,240,255,0.4);
+}
+
+/* ── Logo variants ── */
+
+/* Larger Footer / Landing Variant */
+.vs-logo-md {
+  gap: 20px;
+}
+.vs-logo-md .vs-logo-mark {
+  width: 120px;
+  height: 60px;
+}
+.vs-logo-md .vs-logo-text {
+  font-size: 1.8rem;
+}
+
+/* Navbar specific positioning */
+.vs-navbar .vs-logo {
+  padding-left: 10px;
+}
+
+/* Hover Intensifiers */
+.vs-logo:hover .vs-logo-nexus svg {
+  filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.4));
+}
+.vs-logo:hover .vs-energy-track {
+  animation-duration: 1.2s; /* Faster current when user interacts */
+  stroke-width: 3;
+}
+.vs-logo:hover .vs-logo-text {
+  letter-spacing: 3px;
+}
+
+/* Hide fallback icon */
+.vs-logo-icon { display: none; }
+
+/* ================================================================
+   SECTION 3 — ANIMATED BACKGROUND SYSTEM
+   ================================================================ */
+
+/* ── Canvas (Electric Network) ── */
+#vs-energy-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-bg);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ── Background Container ── */
+.vs-bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-bg);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ── Aurora Blobs ── */
+.vs-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  will-change: transform, opacity;
+}
+.vs-aurora-1 {
+  width: 1100px; height: 1100px;
+  background: radial-gradient(circle, rgba(0,240,255,0.18) 0%, rgba(181,109,255,0.12) 40%, transparent 70%);
+  top: -35%; left: -25%;
+  animation: aurora-a 32s ease-in-out infinite alternate;
+}
+.vs-aurora-2 {
+  width: 850px; height: 850px;
+  background: radial-gradient(circle, rgba(181,109,255,0.16) 0%, rgba(0,240,255,0.1) 50%, transparent 75%);
+  bottom: -30%; right: -20%;
+  animation: aurora-b 26s ease-in-out infinite alternate;
+  animation-delay: -12s;
+}
+.vs-aurora-3 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(0,255,163,0.1) 0%, transparent 70%);
+  top: 35%; left: 25%;
+  animation: aurora-c 40s ease-in-out infinite alternate;
+  animation-delay: -6s;
+}
+@keyframes aurora-a {
+  0%   { transform: translate(0,0) scale(1); opacity: 0.6; }
+  50%  { transform: translate(100px,-80px) scale(1.25); opacity: 0.3; }
+  100% { transform: translate(-60px,100px) scale(0.9); opacity: 0.5; }
+}
+@keyframes aurora-b {
+  0%   { transform: translate(0,0) scale(1); opacity: 0.5; }
+  50%  { transform: translate(-80px,60px) scale(1.3); opacity: 0.25; }
+  100% { transform: translate(60px,-80px) scale(0.85); opacity: 0.45; }
+}
+@keyframes aurora-c {
+  0%   { transform: scale(1) rotate(0deg); opacity: 0.4; }
+  100% { transform: scale(1.5) rotate(180deg); opacity: 0.1; }
+}
+
+/* ── Perspective Grid Floor ── */
+.vs-grid-floor {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 220%;
+  height: 70%;
+  background-image:
+    linear-gradient(rgba(0,240,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,240,255,0.04) 1px, transparent 1px);
+  background-size: 90px 90px;
+  transform: translateX(-50%) perspective(500px) rotateX(75deg);
+  transform-origin: bottom center;
+  mask-image: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 70%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 70%);
+}
+
+/* ── Horizontal Scan Line ── */
+.vs-scan {
+  position: absolute;
+  left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan) 20%, var(--purple) 80%, transparent);
+  opacity: 0.35;
+  animation: scan-move 12s linear infinite;
+}
+@keyframes scan-move {
+  0%   { top: -2px; opacity: 0; }
+  4%   { opacity: 0.35; }
+  96%  { opacity: 0.35; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* ── Floating Particles ── */
+.vs-orb {
+  position: absolute;
+  border-radius: 50%;
+  animation: orb-float linear infinite;
+  pointer-events: none;
+}
+@keyframes orb-float {
+  0%   { transform: translateY(100vh) scale(0) translateX(0); opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 0.5; }
+  100% { transform: translateY(-120px) scale(1.8) translateX(var(--drift, 0px)); opacity: 0; }
+}
+
+/* ================================================================
+   SECTION 4 — EV CHARGING SCENE ANIMATION (CRITICAL)
+   Full SVG-based cinematic EV car + charger + energy flow
+   ================================================================ */
+.ev-scene {
+  position: absolute;
+  bottom: 40px;
+  right: 3%;
+  width: 420px;
+  height: 200px;
+  pointer-events: none;
+  opacity: 0;
+  animation: ev-scene-in 1.5s 1.8s ease forwards;
+}
+@keyframes ev-scene-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 0.55; transform: translateY(0); }
+}
+
+/* Road under the scene */
+.ev-road {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 14px;
+  background: linear-gradient(90deg, transparent, rgba(0,240,255,0.08) 20%, rgba(0,240,255,0.12) 50%, rgba(0,240,255,0.08) 80%, transparent);
+  border-top: 1px solid rgba(0,240,255,0.15);
+}
+.ev-road::after {
+  content: '';
+  position: absolute;
+  bottom: 50%; left: 20%; right: 20%;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, transparent 0, transparent 20px, rgba(0,240,255,0.3) 20px, rgba(0,240,255,0.3) 40px);
+}
+
+/* Car body */
+.ev-car-wrap {
+  position: absolute;
+  bottom: 14px;
+  left: 10px;
+  animation: car-idle 3s ease-in-out infinite alternate;
+}
+@keyframes car-idle {
+  0%   { transform: translateY(0) rotateZ(0deg); }
+  100% { transform: translateY(-4px) rotateZ(0.3deg); }
+}
+
+/* Charger tower */
+.ev-charger-wrap {
+  position: absolute;
+  bottom: 14px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Charging Cable */
+.ev-cable {
+  position: absolute;
+  bottom: 60px;
+  right: 100px;
+  width: 120px;
+  height: 50px;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* Glow halo on car while charging */
+.ev-charge-halo {
+  position: absolute;
+  bottom: 18px;
+  left: 40px;
+  width: 160px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0,240,255,0.2) 0%, transparent 70%);
+  animation: charge-pulse 1.8s ease-in-out infinite;
+  filter: blur(8px);
+}
+@keyframes charge-pulse {
+  0%,100% { opacity: 0.3; transform: scale(1); }
+  50%      { opacity: 0.9; transform: scale(1.25); }
+}
+
+/* Energy bolt lines streaming from charger to car */
+.ev-energy-stream {
+  position: absolute;
+  bottom: 100px;
+  right: 80px;
+  width: 130px;
+  height: 12px;
+  overflow: visible;
+}
+
+/* ================================================================
+   SECTION 5 — NAVBAR
+   ================================================================ */
+.vs-navbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-nav);
+  height: 64px;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  /* Multi-layer glass */
+  background:
+    linear-gradient(180deg, rgba(4,6,15,0.95) 0%, rgba(4,6,15,0.8) 100%);
+  backdrop-filter: blur(60px) saturate(180%);
+  -webkit-backdrop-filter: blur(60px) saturate(180%);
+  border-bottom: 1px solid rgba(0,240,255,0.08);
+
+  /* Triple shadow */
+  box-shadow:
+    0 0 0 1px rgba(0,240,255,0.04),
+    0 4px 30px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* Animated rainbow border at bottom */
+.vs-navbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--cyan) 25%, var(--purple) 75%, transparent 100%);
+  background-size: 300% 100%;
+  opacity: 0.3;
+  animation: nav-flow 5s linear infinite;
+}
+@keyframes nav-flow { to { background-position: -300% 0; } }
+
+/* ── Logo ── */
+.vs-logo {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.vs-logo-icon {
+  position: relative;
+  width: 38px; height: 38px;
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 1rem; letter-spacing: -0.5px;
+  background: linear-gradient(135deg, rgba(0,240,255,0.12), rgba(181,109,255,0.12));
+  border: 1px solid rgba(0,240,255,0.22);
+  color: var(--cyan);
+  transition: all 0.3s var(--ease-spring);
+  overflow: hidden;
+}
+.vs-logo-icon::before {
+  content: '';
+  position: absolute;
+  inset: -60%;
+  background: conic-gradient(from 0deg, transparent 50%, rgba(0,240,255,0.6) 55%, transparent 60%);
+  animation: logo-spin 3s linear infinite;
+}
+.vs-logo-icon::after {
+  content: 'VS';
+  position: relative; z-index: 1;
+  text-shadow: 0 0 14px var(--cyan);
+}
+.vs-logo:hover .vs-logo-icon {
+  box-shadow: 0 0 0 2px rgba(0,240,255,0.4), var(--glow-cyan);
+  transform: scale(1.08);
+}
+@keyframes logo-spin { to { transform: rotate(360deg); } }
+
+.vs-logo-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--text-primary) 30%, var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Nav Links ── */
+.vs-nav-links {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.vs-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 15px;
+  border-radius: var(--r-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-weight: 500;
+  transition: all var(--dur-normal) var(--ease-smooth);
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+.vs-nav-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,240,255,0.07);
+  opacity: 0;
+  transition: opacity var(--dur-normal);
+  border-radius: inherit;
+}
+.vs-nav-link:hover { color: var(--text-primary); }
+.vs-nav-link:hover::before { opacity: 1; }
+.vs-nav-link.active {
+  color: var(--cyan);
+  background: rgba(0,240,255,0.09);
+}
+.vs-nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 26px; height: 2px;
+  background: var(--cyan);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--cyan);
+}
+.vs-nav-link.premium-link { color: var(--gold); }
+.vs-nav-link.premium-link:hover { text-shadow: 0 0 12px var(--gold); }
+
+/* ── NAV RIGHT (owner chip + actions) ── */
+.vs-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ── Owner User Chip ── */
+.vs-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 13px 5px 5px;
+  border-radius: 50px;
+  background: rgba(8, 13, 28, 0.7);
+  border: 1px solid rgba(255,255,255,0.06);
+  text-decoration: none;
+  transition: all 0.22s var(--ease-smooth);
+  cursor: pointer;
+  max-width: 180px;
+}
+.vs-user-chip:hover {
+  border-color: var(--cyan-border);
+  background: rgba(0,240,255,0.06);
+  box-shadow: 0 0 0 2px rgba(0,240,255,0.08);
+}
+.vs-user-chip.active {
+  border-color: var(--cyan-border);
+  background: var(--cyan-dim);
+}
+.vs-user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #030712;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(0,240,255,0.3);
+}
+.vs-user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.vs-user-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+.vs-user-role {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+/* Small button variant */
+.vs-btn-sm { padding: 6px 14px !important; font-size: 0.78rem !important; }
+
+/* ── Hamburger (mobile only) ── */
+.vs-hamburger { display: none; }
+
+/* ── Search Bar ── */
+.vs-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 300px;
+  background: rgba(8,13,28,0.7);
+  border: 1px solid var(--glass-border-2);
+  border-radius: var(--r-sm);
+  padding: 0 12px;
+  transition: border-color 0.2s;
+}
+.vs-search-bar:focus-within {
+  border-color: var(--cyan-border);
+  box-shadow: 0 0 0 2px rgba(0,240,255,0.08);
+}
+.vs-search-bar input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  height: 40px;
+}
+.vs-search-bar input::placeholder { color: var(--text-muted); }
+
+/* ── Responsive Navbar ── */
+@media (max-width: 900px) {
+  .vs-navbar { padding: 0 20px; gap: 10px; }
+  .vs-nav-links {
+    display: none;
+    position: absolute;
+    top: 64px; left: 0; right: 0;
+    flex-direction: column;
+    background: rgba(4,6,15,0.97);
+    backdrop-filter: blur(40px);
+    border-bottom: 1px solid rgba(0,240,255,0.08);
+    padding: 16px 20px 20px;
+    gap: 4px;
+    z-index: 999;
+  }
+  .vs-nav-links.nav-open { display: flex; }
+  .vs-nav-link { padding: 10px 14px; border-radius: var(--r-sm); width: 100%; }
+  .vs-hamburger { display: flex; }
+  .vs-user-name { display: none; }
+  .vs-user-role { display: none; }
+  .vs-user-chip { padding: 5px; border-radius: 50%; }
+  .vs-btn-sm span { display: none; }
+}
+
+/* ================================================================
+   SECTION 6 — BUTTONS
+   ================================================================ */
+.vs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: var(--r-sm);
+  border: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--dur-normal) var(--ease-spring);
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Shimmer sweep on all buttons */
+.vs-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -75%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+.vs-btn:hover::before { left: 125%; }
+
+/* ── Primary (Cyan) ── */
+.vs-btn-primary {
+  background: linear-gradient(135deg, var(--cyan), var(--cyan-2));
+  color: #030712;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(0,240,255,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.vs-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,240,255,0.5), var(--glow-cyan);
+}
+.vs-btn-primary:active { transform: translateY(0); }
+
+/* ── Secondary ── */
+.vs-btn-secondary {
+  background: rgba(8,13,28,0.7);
+  color: var(--text-secondary);
+  border: 1px solid var(--glass-border-2);
+  backdrop-filter: blur(20px);
+}
+.vs-btn-secondary:hover {
+  border-color: var(--cyan-border);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  background: rgba(0,240,255,0.05);
+}
+
+/* ── Gold ── */
+.vs-btn-gold {
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #030712;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(255,214,10,0.3);
+}
+.vs-btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(255,214,10,0.5), var(--glow-gold);
+}
+
+/* ── Ghost ── */
+.vs-btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+}
+.vs-btn-ghost:hover { color: var(--cyan); background: var(--cyan-dim); }
+
+/* ── Icon-only ── */
+.vs-btn-icon {
+  width: 38px; height: 38px;
+  padding: 0;
+  border-radius: var(--r-sm);
+  background: rgba(8,13,28,0.6);
+  border: 1px solid var(--glass-border-2);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all var(--dur-normal);
+}
+.vs-btn-icon:hover { border-color: var(--cyan-border); color: var(--cyan); }
+
+/* ================================================================
+   SECTION 7 — GLASS CARDS
+   ================================================================ */
+.vs-glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(30px) saturate(160%);
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
+  border: 1px solid var(--glass-border-2);
+  border-radius: var(--r-lg);
+  position: relative;
+  overflow: hidden;
+}
+.vs-glass::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ── Stat Cards ── */
+.vs-stat-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-border-2);
+  border-radius: var(--r-lg);
+  padding: 26px 24px 22px;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--dur-slow) var(--ease-spring), box-shadow var(--dur-slow);
+  cursor: default;
+}
+.vs-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--card-accent, linear-gradient(90deg, var(--cyan), var(--purple)));
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+/* Inner glow blob */
+.vs-stat-card::after {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 160px; height: 160px;
+  background: var(--card-glow-color, rgba(0,240,255,0.06));
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+}
+.vs-stat-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+}
+.vs-stat-card .vs-stat-icon {
+  font-size: 1.6rem;
+  margin-bottom: 14px;
+  display: block;
+  filter: drop-shadow(0 0 8px var(--cyan));
+}
+.vs-stat-card .vs-stat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.vs-stat-card .vs-stat-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.vs-stat-card .vs-stat-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ================================================================
+   SECTION 8 — FORMS & INPUTS
+   ================================================================ */
+.vs-input {
+  width: 100%;
+  background: rgba(4, 6, 15, 0.7);
+  border: 1px solid var(--glass-border-2);
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  transition: all var(--dur-normal) var(--ease-smooth);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+.vs-input:focus {
+  border-color: var(--cyan-border);
+  box-shadow: 0 0 0 3px rgba(0,240,255,0.08), inset 0 0 20px rgba(0,240,255,0.04);
+  background: rgba(0,240,255,0.03);
+}
+.vs-input::placeholder { color: var(--text-muted); }
+select.vs-input { cursor: pointer; }
+
+/* Floating label input */
+.vs-float-group {
+  position: relative;
+  margin-bottom: 18px;
+}
+.vs-float-input {
+  width: 100%;
+  background: rgba(4, 6, 15, 0.7);
+  border: 1px solid var(--glass-border-2);
+  border-radius: var(--r-sm);
+  padding: 20px 16px 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all var(--dur-normal) var(--ease-smooth);
+  outline: none;
+}
+.vs-float-input:focus {
+  border-color: var(--cyan-border);
+  box-shadow: 0 0 0 3px rgba(0,240,255,0.08);
+}
+.vs-float-label {
+  position: absolute;
+  left: 16px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: all 0.18s var(--ease-smooth);
+  background: transparent;
+}
+.vs-float-input:focus ~ .vs-float-label,
+.vs-float-input:not(:placeholder-shown) ~ .vs-float-label {
+  top: 8px;
+  transform: none;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.vs-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+/* ================================================================
+   SECTION 9 — PAGE LAYOUT
+   ================================================================ */
+.vs-page-header {
+  padding: 36px 48px 28px;
+  border-bottom: 1px solid var(--glass-border-2);
+  background: linear-gradient(180deg, rgba(0,240,255,0.025), transparent);
+  position: relative;
+}
+.vs-page-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, var(--text-primary), var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.vs-page-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.vs-content {
+  padding: 28px 48px 60px;
+  position: relative;
+  z-index: 1;
+}
+.vs-flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.vs-flex-center { display: flex; align-items: center; }
+.vs-gap-8 { gap: 8px; }
+
+/* ── Grid Layouts ── */
+.vs-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.vs-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 22px; }
+.vs-grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
+.vs-grid-5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; }
+
+@media (max-width: 1400px) { .vs-grid-5 { grid-template-columns: repeat(3,1fr); } }
+@media (max-width: 1100px) { .vs-grid-4 { grid-template-columns: repeat(2,1fr); } .vs-grid-5 { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 900px)  { .vs-grid-3 { grid-template-columns: 1fr 1fr; } .vs-grid-2 { grid-template-columns: 1fr; } }
+@media (max-width: 640px)  { .vs-grid-5, .vs-grid-4, .vs-grid-3 { grid-template-columns: 1fr; } }
+
+/* ─ Card Header ─ */
+.vs-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.vs-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: -0.3px;
+  margin-bottom: 18px;
+}
+.vs-section-title .sticon {
+  width: 32px; height: 32px;
+  border-radius: 9px;
+  background: var(--cyan-dim);
+  border: 1px solid var(--cyan-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem;
+}
+.vs-divider {
+  height: 1px;
+  background: var(--glass-border-2);
+  margin: 18px 0;
+}
+
+/* ================================================================
+   SECTION 10 — TABLES
+   ================================================================ */
+.vs-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--glass-border-2);
+}
+.vs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.vs-table thead th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--glass-border-2);
+  background: rgba(0,0,0,0.2);
+  white-space: nowrap;
+}
+.vs-table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  vertical-align: middle;
+  transition: background 0.15s;
+}
+.vs-table tbody tr:last-child td { border-bottom: none; }
+.vs-table tbody tr:hover td { background: rgba(0,240,255,0.03); }
+
+/* ================================================================
+   SECTION 11 — BADGES
+   ================================================================ */
+.vs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 50px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.vs-badge::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+.vs-badge-no-dot::before { display: none; }
+
+.vs-badge-cyan   { background: var(--cyan-dim);   border: 1px solid var(--cyan-border);   color: var(--cyan); }
+.vs-badge-green  { background: var(--green-dim);  border: 1px solid var(--green-border);  color: var(--green); }
+.vs-badge-red    { background: var(--red-dim);    border: 1px solid var(--red-border);    color: var(--red); }
+.vs-badge-gold   { background: var(--gold-dim);   border: 1px solid var(--gold-border);   color: var(--gold); }
+.vs-badge-purple { background: var(--purple-dim); border: 1px solid var(--purple-border); color: var(--purple); }
+.vs-badge-gray   { background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border-2); color: var(--text-secondary); }
+
+/* ================================================================
+   SECTION 12 — TOAST NOTIFICATIONS
+   ================================================================ */
+.vs-toast-container {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.vs-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: var(--r-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-border-2);
+  box-shadow: var(--shadow-lg);
+  animation: toast-in 0.4s var(--ease-spring) forwards;
+  min-width: 260px;
+  max-width: 380px;
+  pointer-events: all;
+  transition: opacity 0.4s;
+  background: rgba(8,13,28,0.9);
+}
+.vs-toast.success { border-color: var(--green-border); color: var(--text-primary); }
+.vs-toast.error   { border-color: var(--red-border);   color: var(--text-primary); }
+.vs-toast.info    { border-color: var(--cyan-border);  color: var(--text-primary); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0)    scale(1); }
+}
+
+/* ================================================================
+   SECTION 13 — SKELETON LOADERS
+   ================================================================ */
+.vs-skeleton {
+  border-radius: var(--r-sm);
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.03) 75%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+/* ================================================================
+   SECTION 14 — 3D TILT CARD WRAPPER
+   ================================================================ */
+.vs-tilt {
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.4s var(--ease-spring), box-shadow 0.4s;
+}
+.vs-tilt:hover { box-shadow: var(--shadow-lg), 0 0 60px var(--card-glow-color, rgba(0,240,255,0.08)); }
+
+/* ================================================================
+   SECTION 15 — UTILITY EXTRAS
+   ================================================================ */
+.vs-gradient-text {
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.vs-cyan-text  { color: var(--cyan); }
+.vs-green-text { color: var(--green); }
+.vs-red-text   { color: var(--red); }
+.vs-gold-text  { color: var(--gold); }
+.vs-text-muted { color: var(--text-muted); }
+
+/* ── Glow borders ── */
+.vs-border-cyan   { border: 1px solid var(--cyan-border);   box-shadow: inset 0 0 20px rgba(0,240,255,0.04); }
+.vs-border-purple { border: 1px solid var(--purple-border); box-shadow: inset 0 0 20px rgba(181,109,255,0.04); }
+.vs-border-green  { border: 1px solid var(--green-border);  }
+
+/* ── Decorative glowing pill ── */
+.vs-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.vs-pill-cyan   { background: var(--cyan-dim); border: 1px solid var(--cyan-border); color: var(--cyan); }
+.vs-pill-gold   { background: var(--gold-dim); border: 1px solid var(--gold-border); color: var(--gold); }
+.vs-pill-green  { background: var(--green-dim); border: 1px solid var(--green-border); color: var(--green); }
+
+/* ── Inline dot indicator ── */
+.vs-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.vs-dot-green  { background: var(--green);  box-shadow: 0 0 6px var(--green); animation: dot-pulse 1.8s ease-in-out infinite; }
+.vs-dot-red    { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+.vs-dot-cyan   { background: var(--cyan);   box-shadow: 0 0 6px var(--cyan); animation: dot-pulse 1.8s ease-in-out infinite; }
+@keyframes dot-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.7); } }
+
+/* ── Neon glow animations ── */
+@keyframes neon-pulse {
+  0%,100% { filter: drop-shadow(0 0 4px var(--cyan)) drop-shadow(0 0 12px var(--cyan)); }
+  50%      { filter: drop-shadow(0 0 12px var(--cyan)) drop-shadow(0 0 30px var(--cyan)) drop-shadow(0 0 50px var(--purple)); }
+}
+
+/* ── Premium nav link ── */
+.premium-link { color: var(--gold) !important; }
+.premium-link:hover { text-shadow: 0 0 14px var(--gold); background: var(--gold-dim) !important; }
+
+/* ── Page entrance animation ── */
+.vs-page-header, .vs-content { animation: page-enter 0.6s var(--ease-spring) both; }
+@keyframes page-enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+/* ── Amber dot ── */
+.vs-dot-amber  { background: var(--gold);  box-shadow: 0 0 6px var(--gold); animation: dot-pulse 1.4s ease-in-out infinite; }
+
+/* ── Orange (battery warning) ── */
+:root { --orange: #ff9f00; }
+
+/* ── Responsive page padding ── */
+@media (max-width: 768px) {
+  .vs-page-header { padding: 28px 24px 20px; }
+  .vs-content     { padding: 20px 24px 48px; }
+  .vs-navbar      { padding: 0 16px; gap: 8px; }
+  .vs-nav-links   { gap: 0; }
+  .vs-nav-link    { padding: 6px 10px; font-size:0.78rem; }
+}
+
+/* ── Active nav glow ── */
+.vs-nav-link.active {
+  text-shadow: 0 0 12px rgba(0,240,255,0.5);
+}
+
+/* ── Gold badge (premium) ── */
+.vs-badge-gold::before {
+  box-shadow: 0 0 6px var(--gold);
+}
+
+/* ── Thin scrollbar global ── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.15); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,240,255,0.3); }
+
+/* ── Selection highlight ── */
+::selection { background: rgba(0,240,255,0.2); color: var(--text-primary); }
+
+/* ── Focus ring (accessibility) ── */
+:focus-visible {
+  outline: 2px solid rgba(0,240,255,0.5);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+/* ================================================================
+   SECTION 16 — MODAL SYSTEM (Nexus Pro)
+   ================================================================ */
+.vs-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(1, 4, 12, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: modal-fade-in 0.3s var(--ease-out);
+  display: none; /* Toggled via JS (style.display='flex') */
+}
+@keyframes modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.vs-modal {
+  width: 100%;
+  max-width: 500px;
+  max-height: 94vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  animation: modal-slide-up 0.5s var(--ease-spring);
+  position: relative;
+  z-index: 2;
+}
+@keyframes modal-slide-up { from { transform: translateY(40px) scale(0.96); opacity: 0; } }
+
+.vs-modal::-webkit-scrollbar { width: 4px; }
+
+.vs-modal-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem;
+  letter-spacing: -0.6px;
+  color: var(--text-primary);
+}
+
+/* ─ Button Variants (Secondary) ─ */
+.vs-btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border-2);
+  color: var(--text-secondary);
+}
+.vs-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+}
+
+.vs-btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border-2);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.vs-btn-icon:hover {
+  background: var(--cyan-dim);
+  border-color: var(--cyan-border);
+  color: var(--cyan);
+  transform: translateY(-2px);
+}
