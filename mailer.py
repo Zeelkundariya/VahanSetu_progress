@@ -1,28 +1,55 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#   VAHANSETU — SECURE MESSAGING ENGINE (v1.0 Production)
+# ══════════════════════════════════════════════════════════════════════════════
+#
+#   INTERVIEW EXPLANATION:
+#   ────────────────────────────────────────────────────────────────────────────
+#   This module handles automated transactional email notifications (welcome emails,
+#   security alerts on new logins, and CPO revenue updates).
+#
+#   Technical Features:
+#   - Uses Python's standard `smtplib` over port 587 with STARTTLS encryption.
+#   - MIMEMultipart formatting with responsive, dark-mode branded HTML templates.
+#   - Simulation Mode: If MAIL_PASS is not configured in environment variables,
+#     it logs email payloads to stdout without raising errors, ensuring local dev
+#     and interview demos run smoothly without breaking.
+# ══════════════════════════════════════════════════════════════════════════════
+
 import smtplib
 import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# ══════════════════════════════════════════════════════════════════════
-# VAHANSETU — SECURE MESSAGING ENGINE v1.0
-# ──────────────────────────────────────────────────────────────────────
-# Note: For production, set MAIL_USER and MAIL_PASS (Gmail App Password)
-# in your environment variables.
-# ══════════════════════════════════════════════════════════════════════
-
+# Configured sender email address (defaults to official platform account)
 MAIL_USER = os.environ.get('MAIL_USER', 'vahansetu.official@gmail.com')
-MAIL_PASS = os.environ.get('MAIL_PASS', '') # User should set their App Password
+
+# Google App Password (generated via Google Account Security > 2-Step Verification > App Passwords)
+MAIL_PASS = os.environ.get('MAIL_PASS', '')
+
 
 def send_vahan_email(to_email, subject, title, message, action_text="Visit Dashboard", action_url="http://127.0.0.1:5000/map"):
-    """Sends a high-fidelity branded HTML email to the user."""
+    """
+    Sends a branded, high-fidelity transactional HTML email to the recipient.
     
+    Parameters:
+    - to_email: Recipient email address
+    - subject: Email subject line
+    - title: Large hero heading inside the email card
+    - message: Body text explaining the event
+    - action_text / action_url: Call-to-action button linking back to the platform
+    """
+    
+    # Simulation fallback: when no Gmail App Password is provided in environment variables,
+    # print simulated email to console and exit gracefully without throwing an exception.
     if not MAIL_PASS:
         try:
-            print(f"[SIMULATION] Email to {to_email}: {subject}")
+            print(f"[EMAIL SIMULATION] Recipient: {to_email} | Subject: {subject}")
             print(f"   Content: {message}")
-        except: pass
+        except Exception:
+            pass
         return False
 
+    # Responsive, dark-themed HTML email template matching VahanSetu's design language
     html_content = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -62,6 +89,7 @@ def send_vahan_email(to_email, subject, title, message, action_text="Visit Dashb
     </html>
     """
 
+    # Assemble MIME email package
     msg = MIMEMultipart()
     msg['From'] = f"VahanSetu HQ <{MAIL_USER}>"
     msg['To'] = to_email
@@ -69,14 +97,19 @@ def send_vahan_email(to_email, subject, title, message, action_text="Visit Dashb
     msg.attach(MIMEText(html_content, 'html'))
 
     try:
+        # Connect to Google SMTP server on port 587
         server = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
+        # Upgrade plaintext connection to encrypted TLS (Transport Layer Security)
         server.starttls()
+        # Authenticate with credentials
         server.login(MAIL_USER, MAIL_PASS)
+        # Transmit email
         server.send_message(msg)
         server.quit()
         return True
     except Exception as e:
         try:
-            print(f"[MAILER ERROR] Failed to send to {to_email}: {e}")
-        except: pass
+            print(f"[MAILER ERROR] Failed to send email to {to_email}: {e}")
+        except Exception:
+            pass
         return False
