@@ -142,17 +142,30 @@ def init_db():
         ]
         conn.executemany('INSERT INTO stations (name, address, lat, lng, connector_type, power_kw, total_bays, available_bays, owner_id, current_load, price_per_kwh, predicted_occupancy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', demo_stations)
 
-    # Seed Marketplace Listings if empty
-    if not conn.execute('SELECT id FROM marketplace_listings LIMIT 1').fetchone():
-        demo_listings = [
-            (admin_id, 150.0, 187.5, 'active'),
-            (admin_id, 300.0, 360.0, 'active'),
-            (admin_id, 500.0, 575.0, 'active'),
-            (admin_id, 1000.0, 1100.0, 'active')
-        ]
-        conn.executemany('INSERT INTO marketplace_listings (seller_id, credits_amount, price_inr, status) VALUES (?, ?, ?, ?)', demo_listings)
+    try:
+        conn.execute('ALTER TABLE marketplace_listings ADD COLUMN credit_type TEXT DEFAULT "Solar Microgrid"')
+    except: pass
+    try:
+        conn.execute('ALTER TABLE marketplace_listings ADD COLUMN seller_org TEXT DEFAULT "Tata Power Renewables"')
+    except: pass
+    try:
+        conn.execute('ALTER TABLE marketplace_listings ADD COLUMN seller_badge TEXT DEFAULT "ISO-14064 Verified"')
+    except: pass
 
-    # Seed User Data (fleet, vehicles, notifications, carbon ledger)
+    # Seed or upgrade Marketplace Listings with authentic clean energy batches
+    active_m_count = conn.execute('SELECT COUNT(*) FROM marketplace_listings WHERE status = "active"').fetchone()[0]
+    if active_m_count < 4:
+        conn.execute('DELETE FROM marketplace_listings WHERE seller_org IS NULL OR seller_org = "Solaris Green Mobility" OR seller_org = "Tata Power Renewables"')
+        demo_listings = [
+            (admin_id, 450.0, 517.5, 'active', 'Solar PV Microgrid', 'Tata Power Renewable Corridor', 'ISO-14064 Verified'),
+            (admin_id, 800.0, 944.0, 'active', 'Fleet V2G Regeneration', 'BluSmart EV Logistics Depot', 'Enterprise Fleet'),
+            (admin_id, 1500.0, 1725.0, 'active', 'Wind & Solar Hybrid', 'Adani Clean Energy Node', 'Grid Certified'),
+            (admin_id, 250.0, 300.0, 'active', 'Urban Freight Offset', 'Mahindra Last-Mile Clean Freight', 'Green Mobility'),
+            (admin_id, 600.0, 708.0, 'active', 'Rooftop Solar V2G', 'Kalol Solar Prosumer Co-op', 'Community Node')
+        ]
+        conn.executemany('INSERT INTO marketplace_listings (seller_id, credits_amount, price_inr, status, credit_type, seller_org, seller_badge) VALUES (?, ?, ?, ?, ?, ?, ?)', demo_listings)
+
+    # Seed User Data (fleet, vehicles, notifications, carbon ledger, wallet transactions)
     seed_user_data(zeel_id, conn)
 
     conn.commit()
@@ -241,6 +254,20 @@ def seed_user_data(user_id, conn):
         ]
         conn.executemany('INSERT INTO carbon_ledger (user_id, amount, source) VALUES (?, ?, ?)', demo_credits)
         conn.execute('UPDATE users SET carbon_credits = 250.0 WHERE id = ? AND (carbon_credits IS NULL OR carbon_credits = 0)', (user_id,))
+
+    # 7. Seed realistic wallet transactions
+    wallet = conn.execute('SELECT id, balance FROM wallets WHERE user_id = ?', (user_id,)).fetchone()
+    if wallet:
+        t_count = conn.execute('SELECT COUNT(*) FROM transactions WHERE wallet_id = ?', (wallet['id'],)).fetchone()[0]
+        if t_count == 0:
+            demo_txs = [
+                (wallet['id'], 1250.0, 'credit', 'V2G Peak Grid Stabilization Buyback (Discharge 62 kWh)'),
+                (wallet['id'], 360.0, 'debit', 'Marketplace VC Acquisition (300 VC from Tata Renewables)'),
+                (wallet['id'], 540.0, 'debit', 'Solaris Hub North DC Fast Session (34.8 kWh)'),
+                (wallet['id'], 800.0, 'credit', 'ESG Corporate Carbon Offset Direct Payout'),
+                (wallet['id'], 2000.0, 'credit', 'UPI Wallet Auto-Topup (Axis Bank ••9012)')
+            ]
+            conn.executemany('INSERT INTO transactions (wallet_id, amount, type, description) VALUES (?, ?, ?, ?)', demo_txs)
 
     conn.commit()
 
@@ -1083,12 +1110,76 @@ def process_vahanpay():
     conn.commit(); conn.close()
     return jsonify({'success': True, 'new_balance': wallet['balance'] - amount})
 
+@app.route('/api/wallet/topup', methods=['POST'])
+@login_required
+def wallet_topup():
+    data = request.json or {}
+    amount = float(data.get('amount', 500.0))
+    method = data.get('method', 'UPI FastPay')
+    if amount <= 0:
+        return jsonify({'error': 'Invalid top-up amount'}), 400
+    conn = get_db_connection()
+    wallet = conn.execute('SELECT id, balance FROM wallets WHERE user_id = ?', (current_user.id,)).fetchone()
+    if not wallet:
+        conn.execute('INSERT INTO wallets (user_id, balance) VALUES (?, ?)', (current_user.id, amount))
+        wallet_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+        cur_bal = 0.0
+    else:
+        wallet_id = wallet['id']
+        cur_bal = wallet['balance']
+        conn.execute('UPDATE wallets SET balance = balance + ? WHERE id = ?', (amount, wallet_id))
+    
+    conn.execute('INSERT INTO transactions (wallet_id, amount, type, description) VALUES (?, ?, "credit", ?)',
+                 (wallet_id, amount, f'{method} Instant Top-Up (Ref #VHN{random.randint(100000, 999999)})'))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'new_balance': cur_bal + amount})
+
+@app.route('/api/wallet/transfer', methods=['POST'])
+@login_required
+def wallet_transfer():
+    data = request.json or {}
+    amount = float(data.get('amount', 500.0))
+    target = data.get('target', 'UPI: zeel@hdfc')
+    if amount <= 0:
+        return jsonify({'error': 'Invalid transfer amount'}), 400
+    conn = get_db_connection()
+    wallet = conn.execute('SELECT id, balance FROM wallets WHERE user_id = ?', (current_user.id,)).fetchone()
+    if not wallet or wallet['balance'] < amount:
+        conn.close()
+        return jsonify({'error': 'Insufficient VahanPay balance for payout'}), 400
+    
+    conn.execute('UPDATE wallets SET balance = balance - ? WHERE id = ?', (amount, wallet['id']))
+    conn.execute('INSERT INTO transactions (wallet_id, amount, type, description) VALUES (?, ?, "debit", ?)',
+                 (wallet['id'], amount, f'Payout to {target} (Txn #IMPS{random.randint(100000, 999999)})'))
+    conn.commit()
+    new_bal = wallet['balance'] - amount
+    conn.close()
+    return jsonify({'success': True, 'new_balance': new_bal})
+
 @app.route('/api/marketplace/listings', methods=['GET'])
 def get_marketplace():
     conn = get_db_connection()
-    listings = conn.execute('SELECT ml.*, u.name as seller_name FROM marketplace_listings ml JOIN users u ON ml.seller_id = u.id WHERE ml.status = "active"').fetchall()
+    listings = conn.execute('''
+        SELECT ml.*, 
+               COALESCE(ml.seller_org, u.name, "Verified EV Node") as seller_name,
+               COALESCE(ml.credit_type, "Solar Renewable") as credit_type,
+               COALESCE(ml.seller_badge, "Certified Green") as seller_badge
+        FROM marketplace_listings ml 
+        LEFT JOIN users u ON ml.seller_id = u.id 
+        WHERE ml.status = "active"
+        ORDER BY ml.id DESC
+    ''').fetchall()
     conn.close()
-    return jsonify([dict(l) for l in listings])
+    result = []
+    for l in listings:
+        d = dict(l)
+        rate = round(d['price_inr'] / max(d['credits_amount'], 1), 2)
+        d['unit_price'] = rate
+        d['discount_pct'] = max(0, round(((1.25 - rate) / 1.25) * 100))
+        d['co2_kg'] = round(d['credits_amount'] * 0.15, 1)
+        result.append(d)
+    return jsonify(result)
 
 @app.route('/api/marketplace/sell', methods=['POST'])
 @login_required
@@ -1096,19 +1187,25 @@ def list_credits():
     data = request.json or {}
     amount = float(data.get('amount', 0))
     price = float(data.get('price', 0))
+    credit_type = data.get('credit_type', 'Clean EV Mobility Batch')
     
+    if amount <= 0 or price <= 0:
+        return jsonify({'error': 'Invalid amount or price'}), 400
+        
     conn = get_db_connection()
-    user = conn.execute('SELECT carbon_credits FROM users WHERE id = ?', (current_user.id,)).fetchone()
+    user = conn.execute('SELECT carbon_credits, name FROM users WHERE id = ?', (current_user.id,)).fetchone()
     if not user or user['carbon_credits'] < amount:
-        return jsonify({'error': 'Insufficient VahanCredits'}), 400
+        conn.close()
+        return jsonify({'error': 'Insufficient VahanCredits to list'}), 400
         
     conn.execute('UPDATE users SET carbon_credits = carbon_credits - ? WHERE id = ?', (amount, current_user.id))
-    conn.execute('INSERT INTO marketplace_listings (seller_id, credits_amount, price_inr) VALUES (?, ?, ?)',
-                (current_user.id, amount, price))
+    seller_org = f"{user['name']} (Peer Prosumer)"
+    conn.execute('INSERT INTO marketplace_listings (seller_id, credits_amount, price_inr, status, credit_type, seller_org, seller_badge) VALUES (?, ?, ?, "active", ?, ?, "Verified Peer")',
+                (current_user.id, amount, price, credit_type, seller_org))
     conn.execute('INSERT INTO carbon_ledger (user_id, amount, source) VALUES (?, ?, ?)',
-                (current_user.id, -amount, f'Marketplace Listing: {amount} Credits'))
+                (current_user.id, -amount, f'Listed on Marketplace ({amount} VC @ ₹{price})'))
     conn.commit(); conn.close()
-    return jsonify({'success': True})
+    return jsonify({'success': True, 'message': f'Successfully listed {amount} VC for ₹{price}'})
 
 @app.route('/api/marketplace/buy/<int:listing_id>', methods=['POST'])
 @login_required
