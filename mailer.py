@@ -1,115 +1,88 @@
-# ══════════════════════════════════════════════════════════════════════════════
-#   VAHANSETU — SECURE MESSAGING ENGINE (v1.0 Production)
-# ══════════════════════════════════════════════════════════════════════════════
-#
-#   INTERVIEW EXPLANATION:
-#   ────────────────────────────────────────────────────────────────────────────
-#   This module handles automated transactional email notifications (welcome emails,
-#   security alerts on new logins, and CPO revenue updates).
-#
-#   Technical Features:
-#   - Uses Python's standard `smtplib` over port 587 with STARTTLS encryption.
-#   - MIMEMultipart formatting with responsive, dark-mode branded HTML templates.
-#   - Simulation Mode: If MAIL_PASS is not configured in environment variables,
-#     it logs email payloads to stdout without raising errors, ensuring local dev
-#     and interview demos run smoothly without breaking.
-# ══════════════════════════════════════════════════════════════════════════════
-
+# smtplib is Python's built-in library to connect to email servers and send emails
 import smtplib
+
+# os lets us read environment variables (like passwords stored on the computer or server)
 import os
+
+# MIMEText lets us format the email message body with HTML (colors, buttons, text)
 from email.mime.text import MIMEText
+
+# MIMEMultipart creates the full email package (holds From, To, Subject, and the body)
 from email.mime.multipart import MIMEMultipart
 
-# Configured sender email address (defaults to official platform account)
+# load_dotenv loads secret keys from a local .env file into Python
+from dotenv import load_dotenv
+
+# Run load_dotenv so Python reads the .env file if it exists
+load_dotenv()
+
+# The sender email address. If not set in environment, defaults to our platform email
 MAIL_USER = os.environ.get('MAIL_USER', 'vahansetu.official@gmail.com')
 
-# Google App Password (generated via Google Account Security > 2-Step Verification > App Passwords)
-MAIL_PASS = os.environ.get('MAIL_PASS', '')
+# The 16-character Gmail App Password. We never write real passwords directly in code for security
+MAIL_PASS = os.environ.get('MAIL_PASS', '') 
 
 
+# Main function to send an email. 
+# It takes: recipient email, subject line, main headline, message body, button text, and button link
 def send_vahan_email(to_email, subject, title, message, action_text="Visit Dashboard", action_url="http://127.0.0.1:5000/map"):
-    """
-    Sends a branded, high-fidelity transactional HTML email to the recipient.
     
-    Parameters:
-    - to_email: Recipient email address
-    - subject: Email subject line
-    - title: Large hero heading inside the email card
-    - message: Body text explaining the event
-    - action_text / action_url: Call-to-action button linking back to the platform
-    """
-    
-    # Simulation fallback: when no Gmail App Password is provided in environment variables,
-    # print simulated email to console and exit gracefully without throwing an exception.
+    # SAFETY CHECK (Simulation Mode):
+    # If MAIL_PASS is empty (like in local testing or interview demo without real credentials),
+    # we don't want the app to crash. We simply print the email in the terminal and return False.
     if not MAIL_PASS:
         try:
-            print(f"[EMAIL SIMULATION] Recipient: {to_email} | Subject: {subject}")
-            print(f"   Content: {message}")
+            print(f"[SIMULATION] Email to {to_email}: {subject}")
         except Exception:
             pass
         return False
 
-    # Responsive, dark-themed HTML email template matching VahanSetu's design language
+    # This is the HTML design of the email that the user will see in their inbox
     html_content = f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body {{ margin:0; padding:0; font-family:'Inter', sans-serif; background-color:#04060f; color:#ffffff; }}
-            .container {{ max-width:600px; margin:40px auto; background-color:#080d1c; border-radius:24px; border:1px solid #1a243d; overflow:hidden; }}
-            .header {{ padding:40px; text-align:center; background:linear-gradient(135deg, #04060f 0%, #080d1c 100%); border-bottom:1px solid #1a243d; }}
-            .content {{ padding:40px; line-height:1.6; color:#a0aec0; }}
-            .footer {{ padding:30px; text-align:center; font-size:12px; color:#4a5568; border-top:1px solid #1a243d; }}
-            .btn {{ display:inline-block; padding:16px 32px; background-color:#00f2ff; color:#000000; text-decoration:none; border-radius:12px; font-weight:800; font-size:14px; margin-top:24px; }}
-            .accent {{ color:#00f2ff; font-weight:800; }}
-            .logo-text {{ font-size:24px; font-weight:900; letter-spacing:2px; color:#ffffff; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <div class="logo-text">VAHAN<span style="color:#00f2ff;">SETU</span></div>
-                <div style="font-size:12px; letter-spacing:4px; color:rgba(255,255,255,0.4); margin-top:5px;">UNIFIED EV ECOSYSTEM</div>
-            </div>
-            <div class="content">
-                <h1 style="color:#ffffff; font-size:24px; margin-bottom:20px;">{title}</h1>
-                <p>{message}</p>
-                <div style="text-align:center;">
-                    <a href="{action_url}" class="btn">{action_text}</a>
-                </div>
-                <p style="margin-top:30px; font-size:13px;">If you did not authorize this action, please reset your <span class="accent">Access Key</span> immediately in your profile stewardship settings.</p>
-            </div>
-            <div class="footer">
-                © 2026 VahanSetu Technologies · India's Premier EV Network<br>
-                Safeguarding the Electric Future.
-            </div>
-        </div>
+    <html>
+    <body style="font-family: Arial, sans-serif; background-color: #04060f; color: #ffffff; padding: 20px;">
+        <h1 style="color: #00f2ff;">{title}</h1>
+        <p>{message}</p>
+        <a href="{action_url}" style="background-color: #00f2ff; color: #000; padding: 10px 20px; text-decoration: none; border-radius: 5px;">{action_text}</a>
     </body>
     </html>
     """
 
-    # Assemble MIME email package
+    # Create the email container (like an envelope)
     msg = MIMEMultipart()
+    
+    # Set the sender name and email
     msg['From'] = f"VahanSetu HQ <{MAIL_USER}>"
+    
+    # Set the recipient email
     msg['To'] = to_email
+    
+    # Set the subject line of the email
     msg['Subject'] = subject
+    
+    # Put the HTML body inside the envelope as HTML text
     msg.attach(MIMEText(html_content, 'html'))
 
+    # Now try to connect to Google's email server and send the email
     try:
-        # Connect to Google SMTP server on port 587
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
-        # Upgrade plaintext connection to encrypted TLS (Transport Layer Security)
+        # Step 1: Connect to Gmail SMTP server on standard port 587
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        
+        # Step 2: Encrypt the connection with TLS security so nobody can intercept the password
         server.starttls()
-        # Authenticate with credentials
+        
+        # Step 3: Login to Gmail using our email and app password
         server.login(MAIL_USER, MAIL_PASS)
-        # Transmit email
+        
+        # Step 4: Send the email message to the user
         server.send_message(msg)
+        
+        # Step 5: Close the connection with Gmail server
         server.quit()
+        
+        # Return True so the caller knows the email was sent successfully
         return True
-    except Exception as e:
-        try:
-            print(f"[MAILER ERROR] Failed to send email to {to_email}: {e}")
-        except Exception:
-            pass
+        
+    except Exception:
+        # If internet is down or credentials are wrong, return False so the app does not crash
         return False
