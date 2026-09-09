@@ -1,48 +1,22 @@
-# ══════════════════════════════════════════════════════════════════════════════
-#   VAHANSETU — UNIFIED EV MOBILITY & SMART GRID PLATFORM (v5.0 Production)
-# ══════════════════════════════════════════════════════════════════════════════
-#
-#   QUICK ARCHITECTURAL SUMMARY FOR INTERVIEWS:
-#   ────────────────────────────────────────────────────────────────────────────
-#   VahanSetu is an end-to-end Smart EV Ecosystem backend built with Flask & SQLite.
-#   It unifies 4 interconnected domains that usually exist in separate silos:
-#
-#   1. SMART CHARGING INFRASTRUCTURE:
-#      - Real-time station telemetry emulating the OCPP 1.6/2.0 protocol.
-#      - Proximity-based station discovery using the Haversine spherical formula.
-#      - Dynamic grid-tariff pricing based on sinusoidal peak/off-peak forecasts.
-#
-#   2. INTELLIGENT TRIP & CORRIDOR ROUTING:
-#      - Integrated with OSRM (Open Source Routing Machine) for polyline routing.
-#      - Multi-threaded Overpass API queries (ThreadPoolExecutor) to discover
-#        fast-chargers within a 25km buffer corridor along highway trajectories.
-#      - Real-world traffic congestion buffer multipliers (1.32x for Indian transit).
-#
-#   3. FLEET TELEMETRY & DIGITAL TWIN:
-#      - Multi-tenant commercial fleet management (SoC, degradation, range).
-#      - CAN-bus OBD-II hardware emulation (cell voltage balance, pack thermals).
-#      - Physics-based digital twin simulating battery cell-level diagnostics.
-#
-#   4. CIRCULAR CARBON ECONOMY & VAHANPAY (V2G):
-#      - Verified Carbon Credit (VC) minting: 10 kWh clean charging/V2G = 1 VC.
-#      - P2P and Enterprise Open Marketplace with automated 2-sided escrow settlement.
-#      - VahanPay closed-loop wallet supporting instant UPI top-ups and IMPS payouts.
-#
-#   CONCURRENCY & DATABASE DESIGN NOTE:
-#   ────────────────────────────────────────────────────────────────────────────
-#   We use SQLite with WAL (Write-Ahead Logging) mode. This allows background
-#   telemetry simulation threads to read and write without locking user requests.
-#   Rows are returned as sqlite3.Row objects for dictionary-like column access.
-# ══════════════════════════════════════════════════════════════════════════════
-
+# VahanSetu Backend — Flask REST API & Real-Time EV Management Engine
 # ─────────────────────────────────────────────────────────────────────────────
-# 1. CORE DEPENDENCIES & APPLICATION SETUP
+# This file is the complete backend for VahanSetu.
+# It handles:
+# 1. User Authentication (Login, Signup, JWT tokens, Session management)
+# 2. EV Fleet Management (Vehicle status, battery %, energy consumption)
+# 3. Charging Station Management (CPO Host dashboard, adding stations)
+# 4. Smart Trip Planner (Route planning using OSRM and charging stations along the route)
+# 5. Live Telemetry & Digital Twin (OBD-II hardware battery cell simulation)
+# 6. Carbon Credits & VahanPay Wallet (UPI Top-up, Withdrawals, Carbon Marketplace)
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Standard Python and Flask imports
 from flask import Flask, jsonify, request, render_template, redirect, url_for, flash, send_from_directory
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+
+# Import our custom email sender function from mailer.py
 from mailer import send_vahan_email
 
 import sqlite3
@@ -56,75 +30,69 @@ import concurrent.futures
 from datetime import datetime, timedelta
 
 # Initialize Flask application
-# static_folder and template_folder point to client/dist where Vite compiles the React SPA
+# static_folder and template_folder point to 'client/dist' where the React frontend is built
 app = Flask(__name__, static_folder='client/dist', static_url_path='/', template_folder='client/dist')
 
-# JWT Secret for signing stateless session tokens (falls back to hardcoded secret in local dev)
+# Secret key used to sign and verify JWT authentication tokens
 app.config['JWT_SECRET'] = os.environ.get('JWT_SECRET', 'vahan-jwt-quantum-vault-enterprise-security-2026')
 
-# Flask session secret key for CSRF and flash messages
+# Flask secret key used for session cookies and flash messages
 app.secret_key = os.environ.get('SECRET_KEY', 'vs-ultra-secure-key-enterprise-2026')
 
-# Enable Cross-Origin Resource Sharing so React dev server (port 5173/5175) can call Flask API
+# Enable CORS (Cross-Origin Resource Sharing) so React frontend can make API calls to Flask
 CORS(app)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2. VAHAN INTELLIGENCE: SIMULATION & PREDICTION ENGINE
+# 1. SMART GRID SIMULATION & CHARGING STATION TELEMETRY
 # ─────────────────────────────────────────────────────────────────────────────
 
 class VahanIntelligence:
     """
-    Simulation engine responsible for predictive grid pricing and hardware heartbeats.
-    In production with real hardware, this would interface with an OCPP Central System (CSMS)
-    and state electricity board (DISCOM) SCADA feeds.
+    Simulation helper class for dynamic electricity pricing and charger status updates.
     """
 
     @staticmethod
     def get_predictive_pricing():
         """
-        Calculates dynamic electricity tariffs (INR/kWh) based on the current hour.
-        
-        Logic / Math:
-        - Base tariff is ₹18.50 per kWh.
-        - Checks the grid_forecast table for the current hour's price multiplier.
-        - Peak hours (morning rush 8-10 AM, evening peak 6-10 PM) have higher multipliers (~1.3x - 1.5x).
-        - Off-peak solar hours (11 AM - 3 PM) and late nights drop closer to baseline (~1.0x).
+        Calculates electricity tariff (INR per kWh) based on the current hour of the day.
+        - Peak hours (morning rush 8-10 AM, evening rush 6-10 PM) have higher electricity rates.
+        - Off-peak solar hours (11 AM - 3 PM) and late nights have cheaper electricity rates.
+        - Base electricity price is ₹18.50 per kWh.
         """
         hour = datetime.now().hour
         conn = get_db_connection()
-        # Query pre-calculated load multiplier for the active hour
+        # Look up pre-calculated price multiplier for this specific hour
         forecast = conn.execute('SELECT * FROM grid_forecast WHERE hour = ?', (hour,)).fetchone()
         conn.close()
         
-        base_price = 18.5  # Base grid unit rate in INR
+        base_price = 18.5  # Base price per kWh in INR
         if forecast:
+            # Multiply base price with the hour's multiplier and round to 2 decimals
             return round(base_price * forecast['price_multiplier'], 2)
         return base_price
 
     @staticmethod
     def simulate_ocpp_pulse():
         """
-        Emulates real-time OCPP (Open Charge Point Protocol) StatusNotification heartbeats.
-        
-        Why this is needed:
-        - Physical chargers constantly report bay occupancy and power draw to the cloud.
-        - Here, we periodically update available bays, station electrical load (%), and
-          predicted 1-hour occupancy trends based on Indian peak commuting windows.
+        Simulates live heartbeats from physical EV charging stations (like OCPP protocol).
+        - Randomly changes available parking/charging bays.
+        - Simulates live power load percentage on each station.
+        - Predicts 1-hour occupancy trend: 'Rising' during peak commute hours, 'Stable' otherwise.
         """
         conn = get_db_connection()
         try:
             stations = conn.execute('SELECT id, total_bays FROM stations').fetchall()
             for s in stations:
-                # Randomly fluctuate available bays within valid physical limits [0, total_bays]
+                # Randomly pick available bays between 0 and total bays
                 new_avail = max(0, min(s['total_bays'], random.randint(0, s['total_bays'])))
                 hour = datetime.now().hour
                 
-                # Predict rush trends: morning (7-10 AM) and evening (5-8 PM) show rising occupancy
+                # If it is morning rush (7-10 AM) or evening rush (5-8 PM), trend is Rising
                 trend = "Rising" if 7 <= hour <= 10 or 17 <= hour <= 20 else "Stable"
                 prediction = f"{random.randint(10, 90)}% Prob. in 1h ({trend})"
                 
-                # Update station status with simulated live hardware load (20% to 95%)
+                # Update station in database with new available bays and electrical load %
                 conn.execute(
                     'UPDATE stations SET available_bays = ?, current_load = ?, predicted_occupancy = ? WHERE id = ?', 
                     (new_avail, random.uniform(20.0, 95.0), prediction, s['id'])
@@ -137,17 +105,14 @@ class VahanIntelligence:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 3. DATABASE CONNECTION & SCHEMA INITIALIZATION
+# 2. DATABASE CONNECTION & TABLE SETUP
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_db_connection():
     """
-    Creates and returns a SQLite connection configured for concurrent web workloads.
-    
-    Key Settings:
-    - timeout=30: Prevents 'database is locked' errors during simultaneous write bursts.
-    - row_factory = sqlite3.Row: Allows accessing columns both by name (row['email']) 
-      and index (row[0]), keeping code readable and clean.
+    Opens and returns a connection to the SQLite database 'stations.db'.
+    - timeout=30: Wait up to 30 seconds if database is busy so queries don't fail.
+    - row_factory = sqlite3.Row: Allows accessing columns by name like row['email'] instead of row[0].
     """
     db_path = os.path.join(os.path.dirname(__file__), 'stations.db')
     conn = sqlite3.connect(db_path, timeout=30)
@@ -157,55 +122,60 @@ def get_db_connection():
 
 def init_db():
     """
-    Provisions all database tables and ensures initial seed data is present.
-    
-    Architectural Highlights:
-    - WAL Mode (Write-Ahead Logging): Allows concurrent readers without blocking writers.
-    - Non-destructive schema migrations: Uses ALTER TABLE inside try/except blocks
-      so new columns are added safely without wiping existing data.
-    - Automatic seeding: Populates essential admin, demo user (Zeel Kundariya),
-      EV stations, marketplace listings, and financial ledger if tables are empty.
+    Creates all required database tables if they do not exist already.
+    Also seeds initial admin user, demo test user, EV stations, and marketplace listings.
     """
     conn = get_db_connection()
     try:
-        # Enable WAL mode for high-concurrency read/write operations
+        # Enable WAL (Write-Ahead Logging) mode.
+        # This allows background threads to write data while users are reading, without database locks.
         conn.execute('PRAGMA journal_mode=WAL')
     except Exception:
         pass
 
-    # Core user authentication table
+    # 1. Users table (stores user credentials, role, premium status, carbon credits)
     conn.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT UNIQUE, password TEXT, role TEXT DEFAULT "user", is_premium INTEGER DEFAULT 0, carbon_credits REAL DEFAULT 0.0)')
     
-    # Commercial fleet management tables
+    # 2. Fleets table (groups vehicles under a user's company or account)
     conn.execute('CREATE TABLE IF NOT EXISTS fleets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, fleet_name TEXT)')
+    
+    # 3. Fleet vehicles table (stores each car: battery %, range, coordinates, status)
     conn.execute('CREATE TABLE IF NOT EXISTS fleet_vehicles (id INTEGER PRIMARY KEY AUTOINCREMENT, fleet_id INTEGER, vehicle_name TEXT, vehicle_number TEXT, battery_pct INTEGER, range_km REAL, lat REAL, lng REAL, status TEXT, total_energy REAL, total_cost REAL, battery_temp REAL DEFAULT 25.0, cell_voltage REAL DEFAULT 3.7)')
     
-    # Charging station infrastructure table
+    # 4. Charging stations table (name, location lat/lng, plug type, kW power, total & available bays)
     conn.execute('CREATE TABLE IF NOT EXISTS stations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, address TEXT, lat REAL, lng REAL, connector_type TEXT, power_kw INTEGER, total_bays INTEGER, available_bays INTEGER, owner_id INTEGER, current_load REAL DEFAULT 0.0, price_per_kwh REAL DEFAULT 18.5, predicted_occupancy TEXT)')
     
-    # Historical charging and telemetry sessions
+    # 5. Charging sessions history table (kWh charged, cost in INR, carbon saved)
     conn.execute('CREATE TABLE IF NOT EXISTS charging_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, vehicle_id INTEGER, station_id INTEGER, energy_kwh REAL, cost REAL, carbon_saved REAL, credits_earned REAL, start_time TEXT, end_time TEXT)')
     
-    # Bookmarks and audit logs
+    # 6. Saved favourite stations
     conn.execute('CREATE TABLE IF NOT EXISTS favorites (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, station_id INTEGER)')
+    
+    # 7. Security audit logs (records every login IP address and device for security)
     conn.execute('CREATE TABLE IF NOT EXISTS security_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, ip_address TEXT, device_agent TEXT, status TEXT)')
+    
+    # 8. User notifications table
     conn.execute('CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, message TEXT, is_read INTEGER DEFAULT 0)')
     
-    # Carbon economy & grid forecasting
+    # 9. Carbon credit ledger (audit trail of credits earned or spent)
     conn.execute('CREATE TABLE IF NOT EXISTS carbon_ledger (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, amount REAL, source TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)')
+    
+    # 10. Hourly electricity grid pricing forecast
     conn.execute('CREATE TABLE IF NOT EXISTS grid_forecast (id INTEGER PRIMARY KEY AUTOINCREMENT, hour INTEGER, load_factor REAL, price_multiplier REAL)')
     
-    # VahanPay digital wallet & transaction accounting ledger
+    # 11. VahanPay digital wallet (holds real liquid INR balance)
     conn.execute('CREATE TABLE IF NOT EXISTS wallets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER UNIQUE, balance REAL DEFAULT 1500.0, currency TEXT DEFAULT "INR", last_updated DATETIME DEFAULT CURRENT_TIMESTAMP)')
+    
+    # 12. Wallet transactions history (credits, debits, UPI top-ups, payouts)
     conn.execute('CREATE TABLE IF NOT EXISTS transactions (id INTEGER PRIMARY KEY AUTOINCREMENT, wallet_id INTEGER, amount REAL, type TEXT, description TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)')
     
-    # Open Carbon Credit marketplace
+    # 13. Carbon credits marketplace listings
     conn.execute('CREATE TABLE IF NOT EXISTS marketplace_listings (id INTEGER PRIMARY KEY AUTOINCREMENT, seller_id INTEGER, credits_amount REAL, price_inr REAL, status TEXT DEFAULT "active", created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
     
-    # User customization settings
+    # 14. User settings table
     conn.execute('CREATE TABLE IF NOT EXISTS user_settings (user_id INTEGER PRIMARY KEY, language TEXT DEFAULT "en-IN", voice_enabled INTEGER DEFAULT 1, telemetry_visible INTEGER DEFAULT 1)')
 
-    # Safe column additions for backwards compatibility with older database schemas
+    # Add optional columns safely if upgrading from older database versions
     try:
         conn.execute('ALTER TABLE stations ADD COLUMN predicted_occupancy TEXT')
     except Exception:
@@ -225,12 +195,12 @@ def init_db():
     except Exception:
         pass
 
-    # Populate 24-hour grid load forecast curve using mathematical sine/cosine distribution
+    # Seed 24 hours of grid forecast if table is empty
     if not conn.execute('SELECT id FROM grid_forecast LIMIT 1').fetchone():
         forecasts = [(h, 0.5 + 0.4 * math.sin(h/4), 1.0 + 0.5 * math.cos(h/6)) for h in range(24)]
         conn.executemany('INSERT INTO grid_forecast (hour, load_factor, price_multiplier) VALUES (?,?,?)', forecasts)
 
-    # Ensure default platform Administrator exists
+    # Ensure default Admin user exists (email: admin@vahan.com, password: steward2026)
     cursor = conn.cursor()
     cursor.execute('SELECT id FROM users WHERE email = "admin@vahan.com"')
     admin = cursor.fetchone()
@@ -244,7 +214,7 @@ def init_db():
     else:
         admin_id = admin['id']
 
-    # Ensure default primary test user (Zeel Kundariya) exists with pre-seeded wallet & credits
+    # Ensure default demo user exists (email: zeel@gmail.com, password: zeel2026)
     cursor.execute('SELECT id FROM users WHERE email = "zeel@gmail.com"')
     zeel = cursor.fetchone()
     if not zeel:
@@ -258,7 +228,7 @@ def init_db():
         zeel_id = zeel['id']
         cursor.execute('UPDATE users SET carbon_credits = 250.0 WHERE id = ? AND (carbon_credits IS NULL OR carbon_credits = 0)', (zeel_id,))
 
-    # Seed baseline charging stations across key transport corridors in Gujarat
+    # Seed real charging stations in Gujarat if table is empty
     if not conn.execute('SELECT id FROM stations LIMIT 1').fetchone():
         demo_stations = [
             ('Solaris Hub North', 'Ashram Road, Ahmedabad', 23.0338, 72.585, 'CCS2', 150, 12, 8, zeel_id, 35.0, 18.5, '85% Prob. in 1h (Stable)'),
@@ -270,7 +240,7 @@ def init_db():
         ]
         conn.executemany('INSERT INTO stations (name, address, lat, lng, connector_type, power_kw, total_bays, available_bays, owner_id, current_load, price_per_kwh, predicted_occupancy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', demo_stations)
 
-    # Ensure metadata columns exist in marketplace listings for authentic enterprise rendering
+    # Ensure columns exist for verified marketplace sellers
     try:
         conn.execute('ALTER TABLE marketplace_listings ADD COLUMN credit_type TEXT DEFAULT "Solar Microgrid"')
     except Exception:
@@ -284,7 +254,7 @@ def init_db():
     except Exception:
         pass
 
-    # Seed or refresh marketplace with authentic verified renewable energy & clean fleet batches
+    # Seed verified carbon credits batches for the marketplace if needed
     active_m_count = conn.execute('SELECT COUNT(*) FROM marketplace_listings WHERE status = "active"').fetchone()[0]
     if active_m_count < 4:
         conn.execute('DELETE FROM marketplace_listings WHERE seller_org IS NULL OR seller_org = "Solaris Green Mobility" OR seller_org = "Tata Power Renewables"')
@@ -297,7 +267,7 @@ def init_db():
         ]
         conn.executemany('INSERT INTO marketplace_listings (seller_id, credits_amount, price_inr, status, credit_type, seller_org, seller_badge) VALUES (?, ?, ?, ?, ?, ?, ?)', demo_listings)
 
-    # Populate user-specific demo fleet, transactions, notifications, and charging sessions
+    # Seed user's demo fleet, vehicles, sessions, and transactions
     seed_user_data(zeel_id, conn)
 
     conn.commit()
@@ -306,11 +276,10 @@ def init_db():
 
 def seed_user_data(user_id, conn):
     """
-    Seeds rich, realistic operational data for a given user.
-    Called automatically on first run and when viewing dashboards so all UI charts
-    have historical and analytical data to visualize.
+    Populates sample fleet vehicles, charging history, and wallet transactions for a user.
+    This ensures that when an interviewer or user tests the dashboard, it is full of real data.
     """
-    # 1. Ensure user has a commercial fleet container
+    # 1. Create a fleet container for the user if they don't have one
     fleet = conn.execute('SELECT id FROM fleets WHERE user_id = ?', (user_id,)).fetchone()
     if not fleet:
         conn.execute('INSERT INTO fleets (user_id, fleet_name) VALUES (?, ?)', (user_id, 'Global Logistics Alpha'))
@@ -318,7 +287,7 @@ def seed_user_data(user_id, conn):
     else:
         fleet_id = fleet['id']
         
-    # 2. Ensure comprehensive EV fleet vehicles exist with real-world specs and GPS coords
+    # 2. Add realistic commercial EVs with battery percentages and locations
     v_count = conn.execute('SELECT COUNT(*) FROM fleet_vehicles WHERE fleet_id = ?', (fleet_id,)).fetchone()[0]
     if v_count == 0:
         demo_v = [
@@ -331,7 +300,6 @@ def seed_user_data(user_id, conn):
         try:
             conn.executemany('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_energy, total_cost, total_kwh, total_spend, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?,?,?)', demo_v)
         except Exception:
-            # Fallback for databases missing total_kwh / total_spend columns
             demo_fallback = [
                 (fleet_id, 'Intercity-Express 01', 'GJ-01-EV-1001', 4500.0, 54000.0, 'moving', 88, 23.0225, 72.5714),
                 (fleet_id, 'Gandhinagar Shuttle', 'GJ-18-EV-2002', 2800.0, 33600.0, 'moving', 42, 23.2156, 72.6369),
@@ -341,7 +309,7 @@ def seed_user_data(user_id, conn):
             ]
             conn.executemany('INSERT INTO fleet_vehicles (fleet_id, vehicle_name, vehicle_number, total_energy, total_cost, status, battery_pct, lat, lng) VALUES (?,?,?,?,?,?,?,?,?)', demo_fallback)
         
-    # 3. Ensure host stations exist for this user in CPO (Charge Point Operator) view
+    # 3. Add stations owned by this user for the CPO Host view
     s_count = conn.execute('SELECT COUNT(*) FROM stations WHERE owner_id = ?', (user_id,)).fetchone()[0]
     if s_count == 0:
         demo_s = [
@@ -352,7 +320,7 @@ def seed_user_data(user_id, conn):
         ]
         conn.executemany('INSERT INTO stations (name, address, lat, lng, connector_type, power_kw, total_bays, available_bays, owner_id) VALUES (?,?,?,?,?,?,?,?,?)', demo_s)
     
-    # 4. Seed historical charging sessions for Analytics and Profile graphs
+    # 4. Add 25 historical charging sessions so Analytics charts look realistic
     sess_count = conn.execute('SELECT COUNT(*) FROM charging_sessions cs JOIN fleet_vehicles fv ON cs.vehicle_id = fv.id WHERE fv.fleet_id = ?', (fleet_id,)).fetchone()[0]
     if sess_count == 0:
         vids = [r[0] for r in conn.execute('SELECT id FROM fleet_vehicles WHERE fleet_id = ?', (fleet_id,)).fetchall()]
@@ -364,16 +332,16 @@ def seed_user_data(user_id, conn):
             for i in range(25):
                 vid = random.choice(vids)
                 sid = random.choice(sids)
-                energy = round(random.uniform(15.0, 85.0), 1)  # 15 to 85 kWh charge session
+                energy = round(random.uniform(15.0, 85.0), 1)  # 15 to 85 kWh charge
                 cost = round(energy * 15.5, 0)                # Cost at ₹15.5/kWh base
                 start = (now - timedelta(days=random.randint(0, 14), hours=random.randint(0, 23))).strftime('%Y-%m-%d %H:%M:%S')
                 end = (datetime.strptime(start, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=random.randint(30, 90))).strftime('%Y-%m-%d %H:%M:%S')
                 
-                # Math: 1 kWh green energy = 0.82 kg CO2 offset, 10 kWh = 1 VC earned
+                # Rule: 1 kWh green energy = 0.82 kg CO2 offset, 10 kWh = 1 VahanCredit earned
                 demo_sess.append((vid, sid, energy, cost, round(energy*0.82, 1), round(energy*0.1, 1), start, end))
             conn.executemany('INSERT INTO charging_sessions (vehicle_id, station_id, energy_kwh, cost, carbon_saved, credits_earned, start_time, end_time) VALUES (?,?,?,?,?,?,?,?)', demo_sess)
 
-    # 5. Seed operational system notifications
+    # 5. Add notifications
     n_count = conn.execute('SELECT COUNT(*) FROM notifications WHERE user_id = ?', (user_id,)).fetchone()[0]
     if n_count == 0:
         demo_n = [
@@ -384,7 +352,7 @@ def seed_user_data(user_id, conn):
         ]
         conn.executemany('INSERT INTO notifications (user_id, message) VALUES (?, ?)', demo_n)
 
-    # 6. Seed Carbon Credit Verification Ledger
+    # 6. Add initial verified Carbon Credits
     c_count = conn.execute('SELECT COUNT(*) FROM carbon_ledger WHERE user_id = ?', (user_id,)).fetchone()[0]
     if c_count == 0:
         demo_credits = [
@@ -395,7 +363,7 @@ def seed_user_data(user_id, conn):
         conn.executemany('INSERT INTO carbon_ledger (user_id, amount, source) VALUES (?, ?, ?)', demo_credits)
         conn.execute('UPDATE users SET carbon_credits = 250.0 WHERE id = ? AND (carbon_credits IS NULL OR carbon_credits = 0)', (user_id,))
 
-    # 7. Seed realistic VahanPay wallet transactions
+    # 7. Add realistic VahanPay wallet transactions
     wallet = conn.execute('SELECT id, balance FROM wallets WHERE user_id = ?', (user_id,)).fetchone()
     if wallet:
         t_count = conn.execute('SELECT COUNT(*) FROM transactions WHERE wallet_id = ?', (wallet['id'],)).fetchone()[0]
@@ -411,23 +379,24 @@ def seed_user_data(user_id, conn):
 
     conn.commit()
 
-# Initialize tables immediately on module load
+# Call init_db() on startup so database is ready immediately
 init_db()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 4. BACKGROUND SIMULATION WORKER (DAEMON THREAD)
+# 3. BACKGROUND THREAD FOR LIVE TELEMETRY SIMULATION
 # ─────────────────────────────────────────────────────────────────────────────
 
 import threading
 
 def _start_sim():
     """
-    Background worker loop that triggers the OCPP hardware heartbeat every 30 seconds.
-    Running as a daemon thread ensures it does not block the WSGI server or keep
-    the process alive when stopping Flask.
+    Background worker loop.
+    Every 30 seconds, it calls simulate_ocpp_pulse() to update charger availability.
+    We run this as a daemon thread so it runs in the background and terminates
+    automatically when the server stops.
     """
-    time.sleep(3)  # Brief warm-up delay after server boot
+    time.sleep(3)  # Wait 3 seconds after server starts
     while True:
         try:
             VahanIntelligence.simulate_ocpp_pulse()
@@ -435,23 +404,23 @@ def _start_sim():
             pass
         time.sleep(30)
 
-# Launch background worker as a daemon thread
+# Start the background thread
 threading.Thread(target=_start_sim, daemon=True).start()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 5. IDENTITY & SESSION SECURITY (FLASK-LOGIN + JWT NORM)
+# 4. USER AUTHENTICATION & SECURITY (FLASK-LOGIN + JWT TOKENS)
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Initialize Flask-Login for cookie-based browser session management
+# Initialize Flask-Login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'serve'  # Redirect unauthenticated requests to React frontend
+login_manager.login_view = 'serve'  # Redirect unauthenticated users to home/login page
 
 
 class User(UserMixin):
     """
-    Lightweight User model adapting database user rows to Flask-Login's UserMixin interface.
+    Simple User class needed by Flask-Login to track who is currently logged in.
     """
     def __init__(self, id, name, email, role, is_premium):
         self.id = id
@@ -463,7 +432,9 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Callback required by Flask-Login to reconstruct the User object from the session user_id."""
+    """
+    Flask-Login helper function: loads user from database by user_id.
+    """
     conn = get_db_connection()
     u = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     conn.close()
@@ -474,7 +445,9 @@ def load_user(user_id):
 
 @app.context_processor
 def inject_user():
-    """Injects user authentication context into Jinja templates (used during HTML fallback rendering)."""
+    """
+    Provides logged-in user information to HTML templates (if any are rendered).
+    """
     if current_user.is_authenticated:
         return dict(user_name=current_user.name, user_role=current_user.role, is_premium=current_user.is_premium)
     return dict(user_name=None, user_role='guest', is_premium=False)
@@ -482,8 +455,8 @@ def inject_user():
 
 def verify_jwt(token):
     """
-    Validates a cryptographic JSON Web Token (JWT) signed with HMAC-SHA256.
-    Returns the decoded claims dictionary if valid, or None if forged/expired.
+    Decodes and verifies a JWT token using our secret key.
+    Returns user data if token is valid, or None if expired or fake.
     """
     try:
         data = jwt.decode(token, app.config['JWT_SECRET'], algorithms=['HS256'])
@@ -495,16 +468,12 @@ def verify_jwt(token):
 @app.before_request
 def validate_session():
     """
-    Dual-layer authentication and security filter executed before every incoming request.
-    
-    Security Architecture Explained:
-    1. Whitelists public entry points (login, signup, map assets, health checks).
-    2. If user is authenticated via Flask-Login, verifies the accompanying HTTP-Only 
-       JWT cookie ('vs_jwt_nexus') to prevent session hijacking and cross-site tampering.
-    3. If requesting a private /api/* endpoint without valid credentials, returns an 
-       explicit JSON 401 Unauthorized instead of redirecting (so React frontend can handle it cleanly).
+    Security check that runs before EVERY incoming request:
+    1. If the URL is public (like login, signup, stations map), allow it through.
+    2. If user is logged in, check that their HTTP-Only cookie ('vs_jwt_nexus') contains a valid token.
+    3. If requesting a private /api/ endpoint without login, return 401 Unauthorized so React frontend handles it.
     """
-    # Public endpoints that do not require an active session
+    # Public URLs that do not require login
     public = ['/', '/login', '/signup', '/logout', '/api/me', '/api/grid/pricing', '/api/stations']
     if request.path in public or request.path.startswith('/static/'):
         return
@@ -519,7 +488,7 @@ def validate_session():
             return redirect(url_for('serve'))
         
         payload = verify_jwt(token)
-        # Verify the token payload matches the active user ID
+        # Check that token user_id matches the logged-in user
         if not payload or payload.get('user_id') != current_user.id:
             logout_user()
             if request.path.startswith('/api/'):
@@ -531,16 +500,16 @@ def validate_session():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6. CORE ROUTING & AUTHENTICATION ENDPOINTS
+# 5. CORE WEB ROUTES (SERVING REACT SPA & AUTH APIS)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
     """
-    Single-Page Application (SPA) catch-all handler.
-    Serves static assets (JS, CSS, images) from client/dist if they exist on disk,
-    otherwise serves index.html so React Router handles client-side page routing.
+    Serves the React Single Page Application (SPA).
+    If a static file (like .js or .css) exists in client/dist, serve that file.
+    Otherwise serve index.html so React Router handles the page navigation.
     """
     if path != "" and os.path.exists(app.static_folder + '/' + path):
         return send_from_directory(app.static_folder, path)
@@ -550,9 +519,8 @@ def serve(path):
 @app.route('/api/me')
 def api_me():
     """
-    User session probe endpoint.
-    Called by the React frontend on initial page load to verify if the user
-    is logged in and fetch their identity, role, and premium tier.
+    Returns the currently logged-in user profile info.
+    React frontend calls this on page refresh to check if user is logged in.
     """
     if current_user.is_authenticated:
         return jsonify({
@@ -568,16 +536,13 @@ def api_me():
 @app.route('/signup', methods=['POST'])
 def signup():
     """
-    User registration endpoint.
-    Supports both JSON payloads (from React frontend) and standard HTML form submissions.
-    
-    Security & Business Logic Flow:
-    1. Sanitizes inputs (trims name, lowercases email).
-    2. Hashes password using Werkzeug's secure PBKDF2/scrypt algorithm (never plaintext).
-    3. Provisions user record in SQLite.
-    4. Auto-creates a VahanPay wallet with a ₹1,500 initial demo balance.
-    5. Calls seed_user_data() to create a starter fleet and telemetry so the dashboard is ready.
-    6. Dispatches welcome email asynchronously in a background thread to prevent UI lag.
+    New user registration endpoint:
+    1. Reads name, email, password (supports both JSON and Form submissions).
+    2. Hashes the password using generate_password_hash (never save plaintext passwords!).
+    3. Saves user in database.
+    4. Creates a starter VahanPay wallet with ₹1,500.
+    5. Calls seed_user_data() so their fleet dashboard is ready.
+    6. Sends welcome email in a background thread.
     """
     data = request.get_json(silent=True) or {}
     name = (request.form.get('name') or data.get('name') or '').strip()
@@ -586,6 +551,7 @@ def signup():
     
     is_api = request.is_json or 'application/json' in request.headers.get('Accept', '')
 
+    # Validate that all 3 fields are provided
     if not name or not email or not password:
         if is_api:
             return jsonify({'success': False, 'message': 'Please fill all fields.'}), 400
@@ -594,21 +560,21 @@ def signup():
 
     conn = get_db_connection()
     try:
-        # Insert user with salted cryptographic password hash
+        # Save new user with hashed password
         conn.execute(
             'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
             (name, email, generate_password_hash(password))
         )
         new_user_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
         
-        # Provision initial VahanPay digital wallet
+        # Create digital wallet with starter balance of ₹1500
         conn.execute('INSERT OR IGNORE INTO wallets (user_id, balance) VALUES (?, ?)', (new_user_id, 1500.0))
         
-        # Seed default fleet vehicles & charging sessions
+        # Seed initial vehicles and charging history
         seed_user_data(new_user_id, conn)
         conn.commit()
         
-        # Send branded welcome email in non-blocking daemon thread
+        # Send welcome email without blocking the response
         try:
             threading.Thread(target=send_vahan_email, kwargs={
                 'to_email': email,
@@ -642,15 +608,13 @@ def signup():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """
-    Secure login endpoint.
-    
-    Security & Authentication Flow:
-    1. Accepts credentials via JSON or Form data.
-    2. Queries user by email and compares password using check_password_hash (timing-attack safe).
-    3. Mints a 24-hour HS256 JWT containing user claims.
-    4. Establishes Flask-Login session.
-    5. Logs IP address and User-Agent to security_logs audit table.
-    6. Stores JWT in an HTTP-Only cookie ('vs_jwt_nexus') with SameSite=Lax.
+    User login endpoint:
+    1. Checks if email exists in database.
+    2. Uses check_password_hash to securely verify password against the stored hash.
+    3. Generates a 24-hour JWT token.
+    4. Logs the user into Flask-Login session.
+    5. Saves login attempt in security_logs table (IP address and browser User-Agent).
+    6. Stores JWT in an HTTP-Only cookie ('vs_jwt_nexus') to prevent JavaScript token theft.
     """
     if request.method == 'GET':
         return redirect(url_for('serve'))
@@ -670,19 +634,19 @@ def login():
         u = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
         conn.close()
 
-        # Verify password hash against database record
+        # Verify password hash
         if u and check_password_hash(u['password'], password):
-            # Generate 24-hour JWT token
+            # Create JWT token valid for 24 hours
             token = jwt.encode(
                 {'user_id': u['id'], 'email': u['email'], 'exp': datetime.utcnow() + timedelta(hours=24)},
                 app.config['JWT_SECRET'],
                 algorithm='HS256'
             )
             
-            # Log user into Flask-Login session
+            # Log into Flask-Login
             login_user(User(u['id'], u['name'], u['email'], u['role'], u['is_premium']))
             
-            # Audit logging: record successful authentication event
+            # Record successful login in security audit table
             try:
                 conn = get_db_connection()
                 conn.execute(
@@ -692,7 +656,7 @@ def login():
                 conn.commit()
                 conn.close()
                 
-                # Send security notification email in background
+                # Send login notification email in background
                 threading.Thread(target=send_vahan_email, kwargs={
                     'to_email': email,
                     'subject': "🔔 VahanSetu — Secure Login Detected",
@@ -703,7 +667,6 @@ def login():
             except Exception:
                 pass
             
-            # Prepare response (JSON for React, redirect for legacy browsers)
             if is_api:
                 resp = jsonify({
                     'success': True,
@@ -715,13 +678,13 @@ def login():
             else:
                 resp = redirect('/')
                 
-            # Set secure HTTP-Only cookie with the JWT token
+            # Set secure HTTP-Only cookie
             resp.set_cookie('vs_jwt_nexus', token, httponly=True, samesite='Lax')
             if not is_api:
                 flash(f'🛡️ Access Granted: {u["name"]}.', 'success')
             return resp
         
-        # If user existed but password didn't match, record failed attempt in security logs
+        # If user exists but password was wrong, record failure in security logs
         if u:
             try:
                 conn = get_db_connection()
@@ -749,7 +712,7 @@ def login():
 @app.route('/logout')
 def logout():
     """
-    Terminates the user session by clearing Flask-Login and deleting the JWT cookie.
+    Logs out the user and deletes the JWT cookie.
     """
     logout_user()
     resp = redirect(url_for('serve')) if not request.args.get('api') else jsonify({'success': True})
@@ -758,24 +721,21 @@ def logout():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 7. FLEET MANAGEMENT & TELEMETRY APIS
+# 6. FLEET MANAGEMENT APIS
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route('/api/fleet')
 @login_required
 def api_fleet():
     """
-    Fetches commercial EV fleet overview and aggregates operational metrics.
-    
-    Metrics Computed:
-    - Total energy consumed across all fleet vehicles (sum_kwh).
-    - Total operating spend in INR (sum_spend).
-    - Mean fleet State-of-Charge percentage (avg_battery).
-    - Last 15 charging sessions joined with vehicle and station names.
+    Fetches the user's commercial fleet data:
+    - List of vehicles with battery %, status (charging, moving, idle), range in km.
+    - Total fleet energy consumed (kWh) and total operational spend (INR).
+    - Fleet average battery percentage.
+    - Last 15 charging sessions.
     """
     conn = get_db_connection()
     try:
-        # Get or auto-provision the user's primary fleet container
         fleet = conn.execute('SELECT * FROM fleets WHERE user_id = ?', (current_user.id,)).fetchone()
         if not fleet:
             conn.execute('INSERT INTO fleets (user_id, fleet_name) VALUES (?, ?)', (current_user.id, 'Nexus Fleet Alpha'))
@@ -802,10 +762,9 @@ def api_fleet():
         for v in vehicles:
             v['total_kwh'] = float(v.get('total_kwh') or v.get('total_energy') or 0.0)
             v['total_spend'] = float(v.get('total_spend') or v.get('total_cost') or 0.0)
-            # Estimated remaining range assuming 3.8 km per 1% SoC
+            # Estimate range: approx 3.8 km per 1% battery
             v['range_km'] = float(v.get('range_km') or round((v.get('battery_pct') or 50) * 3.8, 1))
 
-        # Join charging sessions with vehicle and station metadata for the activity table
         sessions_raw = conn.execute(
             'SELECT cs.*, fv.vehicle_name, s.name as station_name '
             'FROM charging_sessions cs '
@@ -827,7 +786,7 @@ def api_fleet():
             'fleet_kwh': round(sum_kwh, 1),
             'fleet_spend': round(sum_spend, 2),
             'avg_battery': round(avg_battery, 1),
-            'health_score': 98  # Overall fleet battery degradation health index
+            'health_score': 98
         }
         return jsonify(resp_data)
     finally:
@@ -838,15 +797,14 @@ def api_fleet():
 @login_required
 def api_vehicle_lookup():
     """
-    Simulates an Indian VAHAN / RTO registration plate lookup service.
-    When a user inputs an EV license plate (e.g., 'GJ-18-NX-1001'), this returns
-    the manufacturer, commercial model, and nominal battery pack capacity (kWh).
+    Looks up vehicle technical specifications by number plate (e.g. GJ-18-NX-1001).
+    Simulates RTO / VAHAN vehicle discovery to autofill model and battery capacity in kWh.
     """
     plate = (request.json or {}).get('plate_number', '').strip().upper()
     if not plate:
         return jsonify({'status': 'error', 'message': 'Plate number required'}), 400
     
-    # Mock Master Registry mapping license plates to EV technical specifications
+    # Pre-configured registry of known EV models
     registry = {
         'GJ-01-TX-0001': {'name': 'Tesla Model 3', 'model': 'Long Range', 'cap': 82},
         'GJ-01-AX-9999': {'name': 'Audi e-tron GT', 'model': 'Quattro', 'cap': 93},
@@ -858,7 +816,6 @@ def api_vehicle_lookup():
     
     data = registry.get(plate)
     if not data:
-        # Fallback specification for unlisted plates
         data = {'name': 'Identified EV', 'model': 'Generic Class-A', 'cap': 55}
         
     return jsonify({
@@ -876,8 +833,7 @@ def api_vehicle_lookup():
 @login_required
 def fleet_add():
     """
-    Enrolls a new commercial EV into the user's active fleet.
-    Generates initial telemetry (randomized 30-95% battery, default Ahmedabad coordinates).
+    Adds a new vehicle into the user's fleet.
     """
     data = request.json or {}
     name = data.get('vehicle_name')
@@ -912,9 +868,8 @@ def fleet_add():
 @login_required
 def api_fleet_optimize():
     """
-    Neural dispatch optimizer.
-    Calculates optimal station assignments for fleet vehicles based on available charging bays
-    and off-peak grid pricing windows.
+    Neural fleet dispatcher.
+    Matches vehicles in the fleet with the best charging stations to minimize charging cost.
     """
     conn = get_db_connection()
     try:
@@ -947,8 +902,8 @@ def api_fleet_optimize():
 @login_required
 def api_fleet_vehicle_delete(v_id):
     """
-    Removes a vehicle from the fleet.
-    Enforces strict tenancy check ensuring the vehicle belongs to the logged-in user's fleet.
+    Deletes a vehicle from the fleet.
+    Checks that the vehicle actually belongs to the logged-in user before deleting.
     """
     conn = get_db_connection()
     try:
@@ -956,7 +911,6 @@ def api_fleet_vehicle_delete(v_id):
         if not fleet:
             return jsonify({'success': False, 'message': 'Fleet not found'}), 404
         
-        # Verify ownership
         v = conn.execute('SELECT id FROM fleet_vehicles WHERE id = ? AND fleet_id = ?', (v_id, fleet['id'])).fetchone()
         if not v:
             return jsonify({'success': False, 'message': 'Access denied: Asset not in fleetRegistry'}), 403
@@ -972,7 +926,7 @@ def api_fleet_vehicle_delete(v_id):
 @login_required
 def api_fleet_vehicle_update(v_id):
     """
-    Updates vehicle details (name or registration plate).
+    Updates vehicle nickname or number plate.
     """
     data = request.json or {}
     name = data.get('vehicle_name')
@@ -999,23 +953,20 @@ def api_fleet_vehicle_update(v_id):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 8. HOST & CHARGE POINT OPERATOR (CPO) MANAGEMENT
+# 7. HOST / CHARGE POINT OPERATOR (CPO) APIS
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route('/api/host/dashboard')
 @login_required
 def api_host_dashboard():
     """
-    CPO Host dashboard endpoint.
-    Aggregates metrics for stations owned by the current user:
-    - Total revenue generated across all owned charging stations.
-    - Energy dispensed (kWh) and completed charging session counts.
-    - Bay availability status and recent charging events.
+    Dashboard for station owners (Charge Point Operators):
+    - Lists all stations owned by the user.
+    - Shows total revenue earned (INR), total kWh dispensed, and active bays.
     """
     conn = get_db_connection()
     try:
         seed_user_data(current_user.id, conn)
-        # Fetch owned stations joined with their session revenue
         owned = conn.execute(
             'SELECT s.*, COALESCE(SUM(cs.cost),0) as total_revenue, COUNT(cs.id) as sessions_count '
             'FROM stations s '
@@ -1024,7 +975,6 @@ def api_host_dashboard():
             (current_user.id,)
         ).fetchall()
         
-        # Aggregate totals for the top summary cards
         agg = conn.execute(
             'SELECT COALESCE(SUM(energy_kwh),0) as e, COALESCE(SUM(cost),0) as r, COUNT(*) as s '
             'FROM charging_sessions cs '
@@ -1033,7 +983,6 @@ def api_host_dashboard():
             (current_user.id,)
         ).fetchone()
         
-        # Recent charging events for the audit log table
         events = conn.execute(
             'SELECT cs.*, s.name as station_name '
             'FROM charging_sessions cs '
@@ -1065,7 +1014,8 @@ def api_host_dashboard():
 @login_required
 def api_host_deploy():
     """
-    Registers and publishes a new charging hub node to the public VahanSetu network.
+    Adds a new charging station node to the map.
+    Requires name, address, latitude, longitude, and connector type.
     """
     data = request.json or {}
     name = data.get('name', '').strip()
@@ -1097,13 +1047,11 @@ def api_host_deploy():
 @login_required
 def api_host_station_delete(station_id):
     """
-    Decommissions a charging station.
-    Verifies that the user owns the station before deleting it and cleans up
-    associated charging sessions to maintain relational integrity.
+    Decommissions / deletes a charging station.
+    Verifies that the user owns the station before deleting it.
     """
     conn = get_db_connection()
     try:
-        # Security: verify ownership before deletion
         station = conn.execute('SELECT owner_id FROM stations WHERE id = ?', (station_id,)).fetchone()
         if not station:
             return jsonify({'success': False, 'message': 'Station not found.'}), 404
@@ -1111,7 +1059,7 @@ def api_host_station_delete(station_id):
         if int(station['owner_id']) != int(current_user.id):
             return jsonify({'success': False, 'message': 'Forbidden: Ownership verification failed.'}), 403
         
-        # Referential integrity cleanup: delete associated charging sessions first
+        # Delete related charging sessions and the station
         conn.execute('DELETE FROM charging_sessions WHERE station_id = ?', (station_id,))
         conn.execute('DELETE FROM stations WHERE id = ?', (station_id,))
         conn.commit()
@@ -1123,16 +1071,15 @@ def api_host_station_delete(station_id):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 9. ANALYTICS, PROFILE & SETTINGS APIS
+# 8. ANALYTICS & PROFILE APIS
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route('/api/analytics_data')
 @login_required
 def api_analytics_data():
     """
-    Network-wide analytics endpoint.
-    Computes overall session counts, gross energy throughput (kWh), total revenue,
-    and top-performing charging hubs ranked by revenue.
+    Platform-wide network analytics:
+    Total sessions, total energy dispensed, total revenue, and top-earning stations.
     """
     conn = get_db_connection()
     try:
@@ -1174,8 +1121,8 @@ def api_analytics_data():
 @login_required
 def api_profile_data():
     """
-    User profile metrics and personal charging history.
-    Calculates lifetime energy charged (kWh), total spend (INR), and CO2 saved (kg).
+    User's personal charging statistics:
+    Total sessions, total kWh charged, total money spent, and CO2 emissions saved.
     """
     conn = get_db_connection()
     try:
@@ -1202,7 +1149,7 @@ def api_profile_data():
 @app.route('/api/profile/update', methods=['POST'])
 @login_required
 def api_profile_update():
-    """Updates user display name."""
+    """Updates user display name in the database."""
     name = (request.json or {}).get('name', '').strip()
     if not name:
         return jsonify({'success': False, 'message': 'Name cannot be empty'}), 400
@@ -1219,8 +1166,10 @@ def api_profile_update():
 @login_required
 def api_change_password():
     """
-    Secure password update with verification of current password hash.
-    Enforces minimum 8-character password policy.
+    Changes user password securely:
+    1. Checks that new password matches confirmation.
+    2. Validates that current password hash matches what's stored.
+    3. Hashes the new password and updates the database.
     """
     data = request.json or {}
     cur = data.get('current_password', '')
@@ -1248,8 +1197,7 @@ def api_change_password():
 @login_required
 def api_analytics_filter():
     """
-    Time-bucketed analytics filter (24H, 7D, 30D).
-    Returns categorized energy (kWh) and revenue (INR) trends for graphing.
+    Returns time-filtered analytics data for 24 hours, 7 days, or 30 days.
     """
     cycle = request.args.get('cycle', '7D')
     n = {'24H': 24, '7D': 7, '30D': 30}.get(cycle, 7)
@@ -1262,7 +1210,7 @@ def api_analytics_filter():
 @app.route('/api/notifications')
 @login_required
 def api_notifications():
-    """Returns the 10 most recent system alerts and the count of unread notifications."""
+    """Returns the user's latest 10 notifications and unread count."""
     conn = get_db_connection()
     try:
         notes = [dict(n) for n in conn.execute('SELECT * FROM notifications WHERE user_id = ? ORDER BY timestamp DESC LIMIT 10', (current_user.id,)).fetchall()]
@@ -1273,37 +1221,35 @@ def api_notifications():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 10. GEOSPATIAL ENGINE & ADAPTIVE TRIP PLANNER
+# 9. GEOSPATIAL ENGINE & ADAPTIVE TRIP PLANNER
 # ─────────────────────────────────────────────────────────────────────────────
 
 def haversine(lat1, lon1, lat2, lon2):
     """
-    Calculates the great-circle distance between two GPS coordinates on Earth in kilometers.
+    Calculates the real-world distance (in kilometers) between two GPS points.
     
-    Why Haversine (Spherical Trigonometry) over Euclidean distance (sqrt(dx^2 + dy^2)):
-    - The Earth is an oblate spheroid, so flat Euclidean distance causes massive distortion
-      over medium to long highway trajectories.
-    - Haversine projects coordinates onto a sphere with Earth mean radius R = 6371 km.
-    
-    Step-by-Step Math:
-    1. Convert latitude and longitude deltas from degrees to radians:
-       dlat = radians(lat2 - lat1), dlon = radians(lon2 - lon1)
-    2. Square of half the chord length between points:
-       a = sin^2(dlat/2) + cos(lat1) * cos(lat2) * sin^2(dlon/2)
-    3. Angular distance c = 2 * asin(sqrt(a))
-    4. Distance = R * c
+    Why we use Haversine instead of simple Pythagorean theorem:
+    - Earth is a sphere (curved surface), not a flat sheet of paper.
+    - Simple Pythagorean math gives big errors over highway distances.
+    - Haversine uses Earth's mean radius (R = 6371 km) and trigonometry to find
+      the exact curved surface distance.
     """
-    R = 6371  # Earth's mean radius in kilometers
+    R = 6371  # Earth's radius in km
+    # Convert difference in latitude and longitude from degrees to radians
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
+    
+    # Calculate square of half the chord length between the points
     a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    
+    # Calculate angular distance in radians and multiply by Earth radius
     return round(R * 2 * math.asin(math.sqrt(a)), 2)
 
 
 def geocode_location(q):
     """
-    Converts a human-readable city or address query into GPS latitude and longitude.
-    Uses the OpenStreetMap Nominatim Geocoding API.
+    Converts city or place name (like 'Surat' or 'Ahmedabad') into GPS latitude and longitude.
+    Uses the free OpenStreetMap Nominatim service.
     """
     if not q or q.lower() == 'my location':
         return None
@@ -1325,14 +1271,13 @@ def geocode_location(q):
 @login_required
 def get_stations():
     """
-    Returns EV charging stations sorted by proximity to the user's GPS coordinates.
-    Computes distance in km for every station using haversine().
-    Includes fallback default coordinates (Ahmedabad: 23.0225, 72.5714) for local testing.
+    Returns all verified EV charging stations sorted by distance from the user.
+    Uses the haversine formula to compute distance in km to each station.
     """
     lat = request.args.get('lat', type=float)
     lng = request.args.get('lng', type=float)
     
-    # Regional lock: if coordinates look like a simulator default (e.g. Bengaluru), center on Gujarat demo corridor
+    # Fallback to Ahmedabad coordinates if location is not available
     if lat is not None and lat < 20:
         lat, lng = 23.0225, 72.5714
     
@@ -1343,12 +1288,13 @@ def get_stations():
     db_stations = [dict(s) for s in conn.execute('SELECT * FROM stations').fetchall()]
     conn.close()
     
-    # Calculate physical distance from user to each charging station
+    # Calculate distance from user's current GPS position to each station
     for s in db_stations:
         s['distance_km'] = haversine(lat, lng, s['lat'], s['lng'])
         s['is_verified_db'] = True
 
     unique_stations = { s['id']: s for s in db_stations }.values()
+    # Sort stations from nearest to farthest
     sorted_stations = sorted(unique_stations, key=lambda x: x['distance_km'])
     return jsonify(list(sorted_stations))
 
@@ -1357,30 +1303,22 @@ def get_stations():
 @login_required
 def trip_plan():
     """
-    Enterprise EV Route & Corridor Charging Planner.
-    
-    Step-by-Step Architectural Pipeline:
-    ────────────────────────────────────────────────────────────────────────────
-    1. GEOCODING: Converts origin and destination names into GPS coordinates via Nominatim.
-    2. ROUTE GENERATION: Calls OSRM (Open Source Routing Machine) to retrieve the optimal
-       driving polyline, total distance, and step-by-step turn maneuvers.
-    3. MANEUVER FORMATTING: Parses maneuvers into clean road sheets (e.g. "Turn right on NH-48").
-    4. CORRIDOR DISCOVERY: Samples coordinates along the route polyline every ~50 km.
-    5. PARALLEL OVERPASS QUERY: Spawns a ThreadPoolExecutor (5 worker threads) to query the
-       OpenStreetMap Overpass API for fast-charging hubs located within a 25 km buffer
-       radius around each sampled waypoint.
-    6. DEDUPLICATION & SORTING: Unifies stations, eliminates duplicates, and sorts them
-       by distance from the trip origin.
-    7. TRAFFIC BUFFERING: Multiplies theoretical OSRM duration by a 1.32x congestion factor
-       to provide realistic Indian highway travel times.
-    8. CARBON EMISSION SAVINGS: Computes CO2 saved (total_km * 0.15 kg) and VahanCredits earned.
+    Smart EV Route & Corridor Charging Planner:
+    Step 1: Geocodes start city and destination city into coordinates.
+    Step 2: Calls OSRM (Open Source Routing Machine) to get the driving road polyline.
+    Step 3: Extracts turn-by-turn driving instructions.
+    Step 4: Samples search points every ~50 km along the route.
+    Step 5: Queries OpenStreetMap Overpass API in parallel (5 threads) to find
+            real fast-charging stations within 25 km of the highway route.
+    Step 6: Adds a 1.32x congestion buffer for realistic Indian highway travel time.
+    Step 7: Calculates CO2 saved and carbon credits earned.
     """
     start_q = request.args.get('start')
     end_q = request.args.get('end')
     user_lat = request.args.get('lat', type=float)
     user_lng = request.args.get('lng', type=float)
 
-    # Resolve origin and destination coordinates
+    # 1. Resolve start and destination coordinates
     start_node = geocode_location(start_q) if start_q and start_q.lower() != 'my location' else {"lat": user_lat, "lng": user_lng, "name": "Current Position"}
     end_node = geocode_location(end_q)
     
@@ -1388,7 +1326,7 @@ def trip_plan():
         return jsonify({"error": "Unable to geocode locations. Please enter valid cities."}), 400
 
     try:
-        # Step 1: Query OSRM routing engine with full GeoJSON geometry and maneuver steps
+        # 2. Get driving path from OSRM
         osrm_url = f"http://router.project-osrm.org/route/v1/driving/{start_node['lng']},{start_node['lat']};{end_node['lng']},{end_node['lat']}?overview=full&geometries=geojson&steps=true"
         r = requests.get(osrm_url, timeout=10)
         route_data = r.json()
@@ -1399,11 +1337,11 @@ def trip_plan():
         route = route_data['routes'][0]
         geometry = route['geometry']
         
-        # 1.016x multiplier accounts for minor road bends, diversions, and elevation variances
+        # 1.016x multiplier accounts for small road curves and diversions
         total_km = round((route['distance'] / 1000) * 1.016, 1)
         total_time_min = int(route['duration'] / 60)
         
-        # Step 2: Format turn-by-turn road instructions for the frontend navigation sheet
+        # 3. Format turn-by-turn directions for the road sheet
         instructions = []
         for leg in route.get('legs', []):
             for step in leg.get('steps', []):
@@ -1412,7 +1350,6 @@ def trip_plan():
                 osrm_instr = m.get('instruction', '')
                 dist_km = round(step.get('distance', 0) / 1000, 2)
                 
-                # Extract road name if missing from raw instruction
                 if not name and 'onto' in osrm_instr.lower():
                     name = osrm_instr.split('onto')[-1].strip()
                 elif not name and 'at' in osrm_instr.lower():
@@ -1432,8 +1369,7 @@ def trip_plan():
                     "type": m.get('type', 'step')
                 })
 
-        # Step 3: Corridor Station Discovery
-        # Rather than querying all India, sample route coordinates every ~50 km
+        # 4. Sample points along the highway route every 50 km
         coords = geometry['coordinates']
         corridor_stations = []
         
@@ -1442,7 +1378,7 @@ def trip_plan():
         search_pts.append(coords[-1])
         
         def fetch_corridor_hubs(pt):
-            """Queries Overpass API for EV charging amenity nodes within 25 km (25,000m) of a waypoint."""
+            """Queries Overpass API for EV chargers within 25 km of each waypoint."""
             local_hubs = []
             try:
                 cor_query = f'[out:json][timeout:8];node["amenity"="charging_station"](around:25000, {pt[1]}, {pt[0]});out center;'
@@ -1465,7 +1401,7 @@ def trip_plan():
                 pass
             return local_hubs
 
-        # Step 4: Execute Overpass API searches concurrently across 5 threads to avoid sequential latency
+        # 5. Run searches in parallel across 5 threads for speed
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             results = list(executor.map(fetch_corridor_hubs, search_pts[:10])) 
             
@@ -1476,10 +1412,10 @@ def trip_plan():
                         corridor_stations.append(hub)
                         seen_ids.add(hub['id'])
 
-        # Step 5: Sort discovered corridor charging hubs by distance from journey origin
+        # Sort stations by distance from the trip start point
         corridor_stations.sort(key=lambda s: s['distance_km'])
 
-        # Step 6: Apply real-world Indian traffic buffer (1.32x congestion multiplier)
+        # 6. Apply 1.32x congestion buffer for realistic Indian highway traffic
         raw_duration = route.get('duration', 0)
         padded_time_min = int(raw_duration / 60 * 1.32)
         
@@ -1513,7 +1449,7 @@ def trip_plan():
 @app.route('/api/premium/verify', methods=['POST'])
 @login_required
 def premium_verify():
-    """Upgrades logged-in user to Premium tier."""
+    """Sets current user account to Premium tier."""
     conn = get_db_connection()
     conn.execute('UPDATE users SET is_premium = 1 WHERE id = ?', (current_user.id,))
     conn.commit()
@@ -1524,7 +1460,7 @@ def premium_verify():
 @app.route('/api/premium/cancel', methods=['POST'])
 @login_required
 def premium_cancel():
-    """Downgrades user from Premium tier to standard account."""
+    """Cancels Premium subscription."""
     conn = get_db_connection()
     conn.execute('UPDATE users SET is_premium = 0 WHERE id = ?', (current_user.id,))
     conn.commit()
@@ -1533,14 +1469,13 @@ def premium_cancel():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 11. GRID INTEGRATION, OBD TELEMETRY & CARBON ACCOUNTING
+# 10. DYNAMIC GRID PRICING, OBD TELEMETRY & CARBON ACCOUNTING
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route('/api/grid/pricing', methods=['GET'])
 def get_grid_pricing():
     """
-    Returns real-time dynamic grid electricity pricing and a 6-hour forward forecast.
-    Public endpoint consumed by both map view and smart charging schedulers.
+    Returns current electricity rate (INR per kWh) and next 6 hours forecast.
     """
     price = VahanIntelligence.get_predictive_pricing()
     hour = datetime.now().hour
@@ -1559,9 +1494,8 @@ def get_grid_pricing():
 @login_required
 def get_obd_telemetry(vehicle_id):
     """
-    Simulates live hardware telemetry streamed over an OBD-II CAN bus adapter.
-    Reports individual cell voltages, battery pack thermals, charge cycle count,
-    and Vehicle-to-Grid (V2G) readiness.
+    Simulates live CAN-bus telemetry from vehicle's OBD-II port:
+    Returns pack temperature, cell voltage, charge cycle counts, and V2G export readiness.
     """
     conn = get_db_connection()
     v = conn.execute('SELECT * FROM fleet_vehicles WHERE id = ?', (vehicle_id,)).fetchone()
@@ -1569,7 +1503,6 @@ def get_obd_telemetry(vehicle_id):
     if not v:
         return jsonify({'error': 'Vehicle not found'}), 404
     
-    # Inject realistic hardware sensor variance
     temp = v['battery_temp'] + random.uniform(-0.5, 0.5)
     voltage = v['cell_voltage'] + random.uniform(-0.02, 0.02)
     
@@ -1592,12 +1525,9 @@ def get_obd_telemetry(vehicle_id):
 @login_required
 def get_carbon_ledger():
     """
-    Returns the user's verified Carbon Credit balance and historical verification ledger.
-    
-    Conversion Standards:
-    - 10 kWh clean charging / V2G discharge = 1 VahanCredit (VC).
-    - 1 VC = ~2.5 kg CO2 offset.
-    - 10 VC = equivalent of planting 1 mature tree.
+    Returns user's verified Carbon Credits balance and history.
+    10 kWh clean charging / V2G power = 1 VahanCredit (VC).
+    1 VC = ~2.5 kg CO2 offset.
     """
     conn = get_db_connection()
     user = conn.execute('SELECT carbon_credits FROM users WHERE id = ?', (current_user.id,)).fetchone()
@@ -1619,13 +1549,12 @@ def get_carbon_ledger():
 @login_required
 def get_v2g_revenue():
     """
-    Vehicle-to-Grid (V2G) economic feasibility engine.
-    Calculates estimated revenue for discharging EV battery power back to the grid.
-    Only recommends export during peak tariff spikes (> ₹25/kWh).
+    Calculates revenue from Vehicle-to-Grid (V2G) power discharge back to the grid.
+    Only recommends selling power during peak electricity tariff windows (> ₹25/kWh).
     """
     price = VahanIntelligence.get_predictive_pricing()
     revenue_potential = 0
-    if price > 25:  # Profitable arbitrage during peak grid stress
+    if price > 25:
         revenue_potential = round(random.uniform(50, 150), 2)
     
     return jsonify({
@@ -1637,15 +1566,15 @@ def get_v2g_revenue():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 12. VAHANPAY DIGITAL WALLET & CIRCULAR MARKETPLACE (2-SIDED ESCROW)
+# 11. VAHANPAY DIGITAL WALLET & CARBON MARKETPLACE
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route('/api/wallet/balance', methods=['GET'])
 @login_required
 def get_wallet_balance():
     """
-    Returns the user's active VahanPay wallet balance and last 10 financial transactions.
-    Auto-provisions a wallet with ₹1,500 demo balance if it doesn't exist.
+    Returns active VahanPay wallet balance and last 10 transactions.
+    Creates a wallet with ₹1,500 if user doesn't have one yet.
     """
     conn = get_db_connection()
     wallet = conn.execute('SELECT * FROM wallets WHERE user_id = ?', (current_user.id,)).fetchone()
@@ -1667,8 +1596,10 @@ def get_wallet_balance():
 @login_required
 def process_vahanpay():
     """
-    Direct payment deduction for charging sessions.
-    Validates wallet balance before subtracting funds and records an audit debit entry.
+    Deducts money from wallet for an EV charging session.
+    1. Checks if wallet has enough money.
+    2. Subtracts amount from wallet balance.
+    3. Records a 'debit' entry in transactions table.
     """
     data = request.json or {}
     amount = float(data.get('amount', 0))
@@ -1677,6 +1608,7 @@ def process_vahanpay():
     conn = get_db_connection()
     wallet = conn.execute('SELECT id, balance FROM wallets WHERE user_id = ?', (current_user.id,)).fetchone()
     
+    # Check if balance is sufficient
     if not wallet or wallet['balance'] < amount:
         return jsonify({'error': 'Insufficient VahanPay Balance'}), 400
         
@@ -1692,8 +1624,8 @@ def process_vahanpay():
 @login_required
 def wallet_topup():
     """
-    Instant wallet balance reload (UPI FastPay, RuPay / Card, NetBanking).
-    Credits wallet and creates a verified transaction ledger entry.
+    Instant wallet top-up (via UPI FastPay, Card, or NetBanking).
+    Increases wallet balance and records a 'credit' transaction.
     """
     data = request.json or {}
     amount = float(data.get('amount', 500.0))
@@ -1725,9 +1657,8 @@ def wallet_topup():
 @login_required
 def wallet_transfer():
     """
-    Withdraw / Payout endpoint.
-    Transfers funds from VahanPay wallet directly to a user's UPI VPA or IMPS Bank Account.
-    Enforces balance validation ensuring withdrawal cannot exceed available liquid funds.
+    Withdraw / Payout money from VahanPay wallet to user's UPI ID or Bank account.
+    Checks that user does not try to withdraw more than their wallet balance.
     """
     data = request.json or {}
     amount = float(data.get('amount', 500.0))
@@ -1755,11 +1686,10 @@ def wallet_transfer():
 @app.route('/api/marketplace/listings', methods=['GET'])
 def get_marketplace():
     """
-    Public Open Marketplace board.
-    Fetches all active Carbon Credit listings and dynamically calculates:
-    - Unit price per credit (price_inr / credits_amount).
-    - Market discount % compared to the standard retail benchmark of ₹1.25/VC.
-    - Total CO2 offset (kg) represented by the credit batch.
+    Returns all active carbon credit listings in the open marketplace:
+    - Calculates unit price per credit (price_inr / credits_amount).
+    - Calculates discount percentage compared to standard ₹1.25/VC benchmark.
+    - Calculates CO2 offset in kg.
     """
     conn = get_db_connection()
     listings = conn.execute(
@@ -1779,7 +1709,7 @@ def get_marketplace():
         d = dict(l)
         rate = round(d['price_inr'] / max(d['credits_amount'], 1), 2)
         d['unit_price'] = rate
-        # Benchmark calculation: compare against standard ₹1.25/VC retail rate
+        # Compare with standard ₹1.25 per credit benchmark
         d['discount_pct'] = max(0, round(((1.25 - rate) / 1.25) * 100))
         d['co2_kg'] = round(d['credits_amount'] * 0.15, 1)
         result.append(d)
@@ -1790,13 +1720,11 @@ def get_marketplace():
 @login_required
 def list_credits():
     """
-    Prosumer Carbon Credit listing endpoint.
-    
-    Escrow Workflow:
-    1. Validates that the seller has enough verified VahanCredits in their account.
-    2. Deducts the credits from the seller's user balance immediately (escrow hold).
-    3. Inserts a new active listing into marketplace_listings.
-    4. Records a deduction entry in carbon_ledger.
+    Allows a user to list their surplus carbon credits for sale on the marketplace:
+    1. Checks if user has enough carbon credits.
+    2. Deducts the credits from user account (held in escrow).
+    3. Creates a new active listing on the marketplace.
+    4. Records the listing in carbon_ledger.
     """
     data = request.json or {}
     amount = float(data.get('amount', 0))
@@ -1812,7 +1740,7 @@ def list_credits():
         conn.close()
         return jsonify({'error': 'Insufficient VahanCredits to list'}), 400
         
-    # Deduct credits from seller and hold in escrow
+    # Deduct credits from user account (held in escrow)
     conn.execute('UPDATE users SET carbon_credits = carbon_credits - ? WHERE id = ?', (amount, current_user.id))
     seller_org = f"{user['name']} (Peer Prosumer)"
     conn.execute(
@@ -1832,17 +1760,14 @@ def list_credits():
 @login_required
 def buy_credits(listing_id):
     """
-    Full 2-Sided Escrow Settlement Engine.
-    
-    Transactional Settlement Steps:
-    ────────────────────────────────────────────────────────────────────────────
-    1. Locks the listing and checks that status is still 'active'.
-    2. Validates that the buyer has sufficient VahanPay wallet balance.
-    3. Atomically debits INR from the buyer's wallet.
-    4. Credits VahanCredits to the buyer's user profile.
-    5. Credits INR to the seller's wallet and logs a credit transaction.
-    6. Marks the marketplace listing as 'sold' to prevent double-spending.
-    7. Creates audit entries in transactions and carbon_ledger for both parties.
+    Buyer purchases a carbon credits batch:
+    1. Checks if listing is still active.
+    2. Checks buyer has enough money in their VahanPay wallet.
+    3. Atomically debits INR from buyer wallet.
+    4. Adds carbon credits to buyer user account.
+    5. Credits INR to seller wallet.
+    6. Marks listing as 'sold' so it cannot be bought twice.
+    7. Records audit transactions for both buyer and seller.
     """
     conn = get_db_connection()
     listing = conn.execute('SELECT * FROM marketplace_listings WHERE id = ? AND status = "active"', (listing_id,)).fetchone()
@@ -1853,11 +1778,11 @@ def buy_credits(listing_id):
     if not buyer_wallet or buyer_wallet['balance'] < listing['price_inr']:
         return jsonify({'error': 'Insufficient VahanPay Balance'}), 400
         
-    # 1. Debit buyer's wallet and grant carbon credits
+    # 1. Deduct INR from buyer wallet and add carbon credits to buyer profile
     conn.execute('UPDATE wallets SET balance = balance - ? WHERE id = ?', (listing['price_inr'], buyer_wallet['id']))
     conn.execute('UPDATE users SET carbon_credits = carbon_credits + ? WHERE id = ?', (listing['credits_amount'], current_user.id))
     
-    # 2. Payout INR to the seller's wallet
+    # 2. Payout INR to seller wallet
     seller_wallet = conn.execute('SELECT id FROM wallets WHERE user_id = ?', (listing['seller_id'],)).fetchone()
     if seller_wallet:
         conn.execute('UPDATE wallets SET balance = balance + ? WHERE id = ?', (listing['price_inr'], seller_wallet['id']))
@@ -1866,7 +1791,7 @@ def buy_credits(listing_id):
             (seller_wallet['id'], listing['price_inr'], f'Sold {listing["credits_amount"]} Credits')
         )
     
-    # 3. Mark listing as sold and record audit trails
+    # 3. Mark listing as sold
     conn.execute('UPDATE marketplace_listings SET status = "sold" WHERE id = ?', (listing_id,))
     conn.execute(
         'INSERT INTO transactions (wallet_id, amount, type, description) VALUES (?, ?, "debit", ?)',
@@ -1886,9 +1811,9 @@ def buy_credits(listing_id):
 @login_required
 def get_digital_twin(vehicle_id):
     """
-    Physics-based Digital Twin simulation of the EV battery pack.
-    Returns cell-level voltage telemetry across 8 individual series modules,
-    active liquid cooling status, thermal pack dissipation, and grid throughput kW.
+    Simulates a Physics-based Digital Twin of the EV battery pack:
+    Returns individual cell voltages across 8 series cells, battery temperature,
+    cooling system status (Active vs Passive), and battery health %.
     """
     conn = get_db_connection()
     v = conn.execute('SELECT * FROM fleet_vehicles WHERE id = ?', (vehicle_id,)).fetchone()
@@ -1915,13 +1840,13 @@ def get_digital_twin(vehicle_id):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 13. APPLICATION ENTRY POINT
+# 12. APPLICATION STARTUP
 # ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    # Ensure database schema and seeds are initialized before accepting connections
+    # Initialize database tables and seeds before accepting web traffic
     init_db()
-    # Read deployment PORT dynamically (e.g., Render sets $PORT, local defaults to 5175)
+    # Read PORT from environment (e.g. Render assigns a port, local default is 5175)
     port = int(os.getenv('PORT', 5175))
-    # Run WSGI server on all network interfaces (0.0.0.0)
+    # Run server on all network interfaces
     app.run(debug=os.getenv('DEBUG', 'True') == 'True', host='0.0.0.0', port=port)
